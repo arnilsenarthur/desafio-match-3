@@ -1,0 +1,19 @@
+{
+    "name": "DesafioMatch3.Editor",
+    "rootNamespace": "Gazeus.DesafioMatch3.Editor",
+    "references": [
+        "DesafioMatch3",
+        "Unity.TextMeshPro"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

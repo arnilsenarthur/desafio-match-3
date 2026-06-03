@@ -15,7 +15,19 @@ MonoBehaviour:
   _boardWidth: 10
   _boardHeight: 10
   _tilePrefabRepository: {fileID: 11400000, guid: 153eac3747f207a40add49ed6e2dacb9, type: 2}
-  _startingTimeSeconds: 60
+  _difficulties:
+  - _id: easy
+    _displayName: easy
+    _startingTimeSeconds: 90
+    _tileTypeCount: 4
+  - _id: normal
+    _displayName: normal
+    _startingTimeSeconds: 60
+    _tileTypeCount: 5
+  - _id: hard
+    _displayName: hard
+    _startingTimeSeconds: 45
+    _tileTypeCount: 7
   _timeBonusPerValidSwap: 2
   _scorePerPiece: 10
   _lineClearBonus: 50

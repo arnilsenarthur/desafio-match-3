@@ -28,11 +28,13 @@ namespace Gazeus.DesafioMatch3.Core
 
     public readonly struct GameStartedEventArgs
     {
+        public string DifficultyId { get; }
         public float StartingTime { get; }
         public int TargetScore { get; }
 
-        public GameStartedEventArgs(float startingTime, int targetScore)
+        public GameStartedEventArgs(string difficultyId, float startingTime, int targetScore)
         {
+            DifficultyId = difficultyId;
             StartingTime = startingTime;
             TargetScore = targetScore;
         }

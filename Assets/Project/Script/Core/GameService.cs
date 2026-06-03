@@ -34,14 +34,25 @@ namespace Gazeus.DesafioMatch3.Core
             _config = config;
         }
 
-        public BoardState Start()
+        public BoardState Start(string difficultyId)
         {
+            if (!_config.TryGetDifficulty(difficultyId, out GameDifficultySettings difficulty))
+            {
+                Debug.LogError($"Unknown difficulty id: {difficultyId}");
+                return _board;
+            }
+
             IsGameOver = false;
             Score = 0;
-            TimeRemaining = _config.StartingTimeSeconds;
 
-            InitializeBoard(_config.BoardWidth, _config.BoardHeight);
-            Events.RaiseGameStarted(new GameStartedEventArgs(TimeRemaining, _config.TargetScore));
+            int tileTypeCount = Mathf.Clamp(difficulty.TileTypeCount, 1, _config.MaxTileTypeCount);
+            TimeRemaining = difficulty.StartingTimeSeconds;
+
+            InitializeBoard(_config.BoardWidth, _config.BoardHeight, tileTypeCount);
+            Events.RaiseGameStarted(new GameStartedEventArgs(
+                difficulty.Id,
+                TimeRemaining,
+                _config.TargetScore));
             Events.RaiseScoreChanged(new ScoreChangedEventArgs(Score, 0));
             Events.RaiseTimeChanged(new TimeChangedEventArgs(TimeRemaining, 0));
 
@@ -57,6 +68,23 @@ namespace Gazeus.DesafioMatch3.Core
 
             float previous = TimeRemaining;
             TimeRemaining = Mathf.Max(0f, TimeRemaining - deltaTime);
+            Events.RaiseTimeChanged(new TimeChangedEventArgs(TimeRemaining, TimeRemaining - previous));
+
+            if (TimeRemaining <= 0f)
+            {
+                EndGame(GameEndReason.TimeUp);
+            }
+        }
+
+        public void AdjustTime(float deltaSeconds)
+        {
+            if (IsGameOver || deltaSeconds == 0f)
+            {
+                return;
+            }
+
+            float previous = TimeRemaining;
+            TimeRemaining = Mathf.Max(0f, TimeRemaining + deltaSeconds);
             Events.RaiseTimeChanged(new TimeChangedEventArgs(TimeRemaining, TimeRemaining - previous));
 
             if (TimeRemaining <= 0f)
@@ -152,9 +180,9 @@ namespace Gazeus.DesafioMatch3.Core
             return valid;
         }
 
-        private void InitializeBoard(int boardWidth, int boardHeight)
+        private void InitializeBoard(int boardWidth, int boardHeight, int tileTypeCount)
         {
-            _tilesTypes = BuildTileTypes(_config.TileTypeCount);
+            _tilesTypes = BuildTileTypes(tileTypeCount);
             EnsureBoards(boardWidth, boardHeight);
             RegenerateBoard();
         }

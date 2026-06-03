@@ -68,14 +68,7 @@ namespace Gazeus.DesafioMatch3.Views
 
         private void OnGameEnded(GameEndedEventArgs args)
         {
-            string message = args.Reason switch
-            {
-                GameEndReason.TargetScoreReached => $"Goal reached! Score: {args.FinalScore}",
-                GameEndReason.TimeUp => $"Time's up! Score: {args.FinalScore}",
-                _ => $"Game over! Score: {args.FinalScore}"
-            };
-
-            SetStatus(message);
+            SetStatus(string.Empty);
         }
 
         private void SetStatus(string message)

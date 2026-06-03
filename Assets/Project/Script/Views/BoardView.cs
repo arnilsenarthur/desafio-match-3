@@ -149,6 +149,39 @@ namespace Gazeus.DesafioMatch3.Views
             }
         }
 
+        public void ClearBoard()
+        {
+            ClearSelection();
+            ClearHover();
+
+            if (_tiles != null)
+            {
+                for (int i = 0; i < _tiles.Length; i++)
+                {
+                    if (_tiles[i] != null)
+                    {
+                        _tilePool.Release(_tiles[i]);
+                    }
+                }
+            }
+
+            if (_tileSpots != null)
+            {
+                for (int i = 0; i < _tileSpots.Length; i++)
+                {
+                    if (_tileSpots[i] != null)
+                    {
+                        Destroy(_tileSpots[i].gameObject);
+                    }
+                }
+            }
+
+            _tiles = null;
+            _tileSpots = null;
+            _width = 0;
+            _height = 0;
+        }
+
         public void SetInteractionEnabled(bool enabled)
         {
             if (_interactionEnabled == enabled)

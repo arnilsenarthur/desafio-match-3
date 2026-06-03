@@ -15,8 +15,16 @@ namespace Gazeus.DesafioMatch3.Controllers
         [SerializeField] private GameHudView _hudView;
         [SerializeField] private GameConfig _gameConfig;
 
+#if UNITY_EDITOR
+        [SerializeField] private string _fallbackDifficultyId = "normal";
+#endif
+
         private GameService _gameService;
         private bool _isAnimating;
+        private bool _isPaused;
+
+        public GameService GameService => _gameService;
+        public bool IsPaused => _isPaused;
 
         private void Awake()
         {
@@ -33,14 +41,73 @@ namespace Gazeus.DesafioMatch3.Controllers
 
         private void Start()
         {
-            BoardState board = _gameService.Start();
+            string difficultyId = ResolveDifficultyId();
+            if (difficultyId == null)
+            {
+                SceneLoader.LoadMainMenu();
+                return;
+            }
+
+            BoardState board = _gameService.Start(difficultyId);
             _boardView.CreateBoard(board);
+        }
+
+        private string ResolveDifficultyId()
+        {
+            if (GameRunContext.HasSelectedDifficulty &&
+                _gameConfig.TryGetDifficulty(GameRunContext.SelectedDifficultyId, out _))
+            {
+                return GameRunContext.SelectedDifficultyId;
+            }
+
+#if UNITY_EDITOR
+            if (_gameConfig != null &&
+                _gameConfig.TryGetDifficulty(_fallbackDifficultyId, out _))
+            {
+                return _fallbackDifficultyId;
+            }
+#endif
+
+            return null;
+        }
+
+        public void SetPaused(bool paused)
+        {
+            _isPaused = paused;
+            RefreshInteractionState();
+        }
+
+        public void RestartGame(string difficultyId)
+        {
+            if (!_gameConfig.TryGetDifficulty(difficultyId, out _))
+            {
+                Debug.LogError($"Cannot restart game with unknown difficulty id: {difficultyId}");
+                return;
+            }
+
+            _isAnimating = false;
+            SetPaused(false);
+            DOTween.Kill(_boardView.transform, true);
+
+            GameRunContext.Clear();
+            GameRunContext.SelectDifficulty(difficultyId);
+
+            _boardView.ClearBoard();
+            BoardState board = _gameService.Start(difficultyId);
+            _boardView.CreateBoard(board);
+            RefreshInteractionState();
         }
 
         private void Update()
         {
-            _gameService.TimerPaused = _isAnimating;
+            _gameService.TimerPaused = _isAnimating || _isPaused;
             _gameService.Tick(Time.deltaTime);
+        }
+
+        private void RefreshInteractionState()
+        {
+            bool canInteract = !_isPaused && !_isAnimating && !_gameService.IsGameOver;
+            _boardView.SetInteractionEnabled(canInteract);
         }
 
         private void AnimateBoard(List<BoardSequence> boardSequences, Action onComplete)
@@ -59,7 +126,7 @@ namespace Gazeus.DesafioMatch3.Controllers
 
         private void OnTileClick(int x, int y)
         {
-            if (_isAnimating || _gameService.IsGameOver)
+            if (_isPaused || _isAnimating || _gameService.IsGameOver)
             {
                 return;
             }
@@ -92,7 +159,7 @@ namespace Gazeus.DesafioMatch3.Controllers
 
             _isAnimating = true;
             _boardView.ClearSelection();
-            _boardView.SetInteractionEnabled(false);
+            RefreshInteractionState();
 
             _boardView.SwapTiles(fromX, fromY, x, y).onComplete += () =>
             {
@@ -116,7 +183,7 @@ namespace Gazeus.DesafioMatch3.Controllers
             }
 
             _isAnimating = false;
-            _boardView.SetInteractionEnabled(true);
+            RefreshInteractionState();
         }
     }
 }
