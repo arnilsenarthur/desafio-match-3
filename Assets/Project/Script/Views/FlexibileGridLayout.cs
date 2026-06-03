@@ -1,0 +1,125 @@
+using UnityEngine;
+using UnityEngine.UI;
+
+namespace Gazeus.DesafioMatch3
+{
+    public class FlexibleGridLayout : LayoutGroup
+    {
+        [SerializeField] 
+        private int _rows;
+        [SerializeField] 
+        private int _columns;
+        [SerializeField] 
+        private Vector2 _spacing;
+
+        public int Rows
+        {
+            get => _rows;
+            set
+            {
+                _rows = value;
+                LayoutRebuilder.MarkLayoutForRebuild(rectTransform);
+            }
+        }
+        
+        public int Columns
+        {
+            get => _columns;
+            set
+            {
+                _columns = value;
+                LayoutRebuilder.MarkLayoutForRebuild(rectTransform);
+            }
+        }
+        
+        public Vector2 Spacing
+        {
+            get => _spacing;
+            set
+            {
+                _spacing = value;
+                LayoutRebuilder.MarkLayoutForRebuild(rectTransform);
+            }
+        }
+
+        public override void CalculateLayoutInputHorizontal()
+        {
+            base.CalculateLayoutInputHorizontal();
+
+            if (transform.childCount == 0) 
+                return;
+
+            float parentWidth = rectTransform.rect.width;
+            float parentHeight = rectTransform.rect.height;
+
+            float totalSpacingX = _spacing.x * (_columns - 1) + padding.left + padding.right;
+            float totalSpacingY = _spacing.y * (_rows - 1) + padding.top + padding.bottom;
+
+            float cellWidth = (parentWidth - totalSpacingX) / _columns;
+            float cellHeight = (parentHeight - totalSpacingY) / _rows;
+
+            for (int i = 0; i < rectChildren.Count; i++)
+            {
+                int rowCount = i / _columns;
+                int columnCount = i % _columns;
+
+                var item = rectChildren[i];
+
+                float xPos = padding.left + (cellWidth * columnCount) + (_spacing.x * columnCount);
+                float yPos = padding.top + (cellHeight * rowCount) + (_spacing.y * rowCount);
+
+                SetChildAlongAxis(item, 0, xPos, cellWidth);
+                SetChildAlongAxis(item, 1, yPos, cellHeight);
+            }
+        }
+
+        public override void CalculateLayoutInputVertical() { }
+        public override void SetLayoutHorizontal() { }
+        public override void SetLayoutVertical() { }
+
+        public bool TryGetCellCoordinates(Vector2 localPoint, out int x, out int y)
+        {
+            x = -1;
+            y = -1;
+
+            if (_columns <= 0 || _rows <= 0)
+            {
+                return false;
+            }
+
+            Rect rect = rectTransform.rect;
+            float xFromLeft = localPoint.x + rect.width * rectTransform.pivot.x;
+            float yFromTop = rect.height * (1f - rectTransform.pivot.y) - localPoint.y;
+
+            float totalSpacingX = _spacing.x * (_columns - 1) + padding.left + padding.right;
+            float totalSpacingY = _spacing.y * (_rows - 1) + padding.top + padding.bottom;
+            float cellWidth = (rect.width - totalSpacingX) / _columns;
+            float cellHeight = (rect.height - totalSpacingY) / _rows;
+            float strideX = cellWidth + _spacing.x;
+            float strideY = cellHeight + _spacing.y;
+
+            if (strideX <= 0f || strideY <= 0f)
+            {
+                return false;
+            }
+
+            x = Mathf.FloorToInt((xFromLeft - padding.left) / strideX);
+            y = Mathf.FloorToInt((yFromTop - padding.top) / strideY);
+
+            if (x < 0 || y < 0 || x >= _columns || y >= _rows)
+            {
+                return false;
+            }
+
+            float cellLocalX = xFromLeft - padding.left - x * strideX;
+            float cellLocalY = yFromTop - padding.top - y * strideY;
+
+            if (cellLocalX < 0f || cellLocalY < 0f || cellLocalX > cellWidth || cellLocalY > cellHeight)
+            {
+                return false;
+            }
+
+            return true;
+        }
+    }
+}

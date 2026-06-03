@@ -4,72 +4,103 @@ using DG.Tweening;
 using Gazeus.DesafioMatch3.Models;
 using Gazeus.DesafioMatch3.ScriptableObjects;
 using UnityEngine;
-using UnityEngine.UI;
+using UnityEngine.EventSystems;
 
 namespace Gazeus.DesafioMatch3.Views
 {
-    public class BoardView : MonoBehaviour
+    public class BoardView : MonoBehaviour, IPointerClickHandler
     {
         public event Action<int, int> TileClicked;
 
-        [SerializeField] private GridLayoutGroup _boardContainer;
-        [SerializeField] private TilePrefabRepository _tilePrefabRepository;
-        [SerializeField] private TileSpotView _tileSpotPrefab;
+        [SerializeField] 
+        private FlexibleGridLayout _boardContainer;
+        [SerializeField] 
+        private TilePrefabRepository _tilePrefabRepository;
+        [SerializeField] 
+        private TileSpotView _tileSpotPrefab;
 
-        private GameObject[][] _tiles;
-        private TileSpotView[][] _tileSpots;
+        private int _width;
+        private int _height;
+        private GameObject[] _tiles;
+        private TileSpotView[] _tileSpots;
+        private TileObjectPool _tilePool;
+        private Transform _poolRoot;
+        private RectTransform _boardRect;
 
-        public void CreateBoard(List<List<Tile>> board)
+        private void Awake()
         {
-            _boardContainer.constraintCount = board[0].Count;
-            _tiles = new GameObject[board.Count][];
-            _tileSpots = new TileSpotView[board.Count][];
+            _boardRect = _boardContainer.transform as RectTransform;
 
-            for (int y = 0; y < board.Count; y++)
+            GameObject poolObject = new GameObject("TilePool");
+            poolObject.transform.SetParent(transform, false);
+            _poolRoot = poolObject.transform;
+            _tilePool = new TileObjectPool(_tilePrefabRepository.TileTypePrefabList, _poolRoot);
+        }
+
+        public void CreateBoard(BoardState board)
+        {
+            _width = board.Width;
+            _height = board.Height;
+            _boardContainer.Rows = _height;
+            _boardContainer.Columns = _width;
+
+            int cellCount = _width * _height;
+            _tiles = new GameObject[cellCount];
+            _tileSpots = new TileSpotView[cellCount];
+
+            for (int y = 0; y < _height; y++)
             {
-                _tiles[y] = new GameObject[board[0].Count];
-                _tileSpots[y] = new TileSpotView[board[0].Count];
-
-                for (int x = 0; x < board[0].Count; x++)
+                for (int x = 0; x < _width; x++)
                 {
-                    TileSpotView tileSpot = Instantiate(_tileSpotPrefab);
-                    tileSpot.transform.SetParent(_boardContainer.transform, false);
-                    tileSpot.SetPosition(x, y);
-                    tileSpot.Clicked += TileSpot_Clicked;
+                    int index = ToIndex(x, y);
 
-                    _tileSpots[y][x] = tileSpot;
+                    TileSpotView tileSpot = Instantiate(_tileSpotPrefab, _boardContainer.transform, false);
+                    _tileSpots[index] = tileSpot;
 
-                    int tileTypeIndex = board[y][x].Type;
+                    int tileTypeIndex = board.GetType(x, y);
                     if (tileTypeIndex > -1)
                     {
-                        GameObject tilePrefab = _tilePrefabRepository.TileTypePrefabList[tileTypeIndex];
-                        GameObject tile = Instantiate(tilePrefab);
+                        GameObject tile = _tilePool.Get(tileTypeIndex);
                         tileSpot.SetTile(tile);
-
-                        _tiles[y][x] = tile;
+                        _tiles[index] = tile;
                     }
                 }
             }
         }
 
+        public void OnPointerClick(PointerEventData eventData)
+        {
+            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                    _boardRect,
+                    eventData.position,
+                    eventData.pressEventCamera,
+                    out Vector2 localPoint))
+            {
+                return;
+            }
+
+            if (!_boardContainer.TryGetCellCoordinates(localPoint, out int x, out int y))
+            {
+                return;
+            }
+
+            TileClicked?.Invoke(x, y);
+        }
+
         public Tween CreateTile(List<AddedTileInfo> addedTiles)
         {
             Sequence sequence = DOTween.Sequence();
-            for (int i = 0; i < addedTiles.Count; i++)
+            foreach (var addedTileInfo in addedTiles)
             {
-                AddedTileInfo addedTileInfo = addedTiles[i];
                 Vector2Int position = addedTileInfo.Position;
+                int index = ToIndex(position.x, position.y);
 
-                TileSpotView tileSpot = _tileSpots[position.y][position.x];
+                GameObject tile = _tilePool.Get(addedTileInfo.Type);
+                _tileSpots[index].SetTile(tile);
+                _tiles[index] = tile;
 
-                GameObject tilePrefab = _tilePrefabRepository.TileTypePrefabList[addedTileInfo.Type];
-                GameObject tile = Instantiate(tilePrefab);
-                tileSpot.SetTile(tile);
-
-                _tiles[position.y][position.x] = tile;
-
-                tile.transform.localScale = Vector2.zero;
-                sequence.Join(tile.transform.DOScale(1.0f, 0.2f));
+                tile.transform.localScale = Vector3.zero;
+                sequence.Join(tile.transform.DOScale(1f, 0.2f));
             }
 
             return sequence;
@@ -77,62 +108,54 @@ namespace Gazeus.DesafioMatch3.Views
 
         public Tween DestroyTiles(List<Vector2Int> matchedPosition)
         {
-            for (int i = 0; i < matchedPosition.Count; i++)
+            Sequence sequence = DOTween.Sequence();
+            foreach (var position in matchedPosition)
             {
-                Vector2Int position = matchedPosition[i];
-                Destroy(_tiles[position.y][position.x]);
-                _tiles[position.y][position.x] = null;
+                int index = ToIndex(position.x, position.y);
+                GameObject tile = _tiles[index];
+                _tiles[index] = null;
+
+                sequence.Join(tile.transform.DOScale(0f, 0.2f).OnComplete(() => _tilePool.Release(tile)));
             }
 
-            return DOVirtual.DelayedCall(0.2f, () => { });
+            return sequence;
         }
 
         public Tween MoveTiles(List<MovedTileInfo> movedTiles)
         {
-            GameObject[][] tiles = new GameObject[_tiles.Length][];
-            for (int y = 0; y < _tiles.Length; y++)
-            {
-                tiles[y] = new GameObject[_tiles[y].Length];
-                for (int x = 0; x < _tiles[y].Length; x++)
-                {
-                    tiles[y][x] = _tiles[y][x];
-                }
-            }
-
             Sequence sequence = DOTween.Sequence();
-            for (int i = 0; i < movedTiles.Count; i++)
+            foreach (var movedTileInfo in movedTiles)
             {
-                MovedTileInfo movedTileInfo = movedTiles[i];
-
                 Vector2Int from = movedTileInfo.From;
                 Vector2Int to = movedTileInfo.To;
 
-                sequence.Join(_tileSpots[to.y][to.x].AnimatedSetTile(_tiles[from.y][from.x]));
+                int fromIndex = ToIndex(from.x, from.y);
+                int toIndex = ToIndex(to.x, to.y);
 
-                tiles[to.y][to.x] = _tiles[from.y][from.x];
+                GameObject tile = _tiles[fromIndex];
+                sequence.Join(_tileSpots[toIndex].AnimatedSetTile(tile));
+
+                _tiles[toIndex] = tile;
+                _tiles[fromIndex] = null;
             }
-
-            _tiles = tiles;
 
             return sequence;
         }
 
         public Tween SwapTiles(int fromX, int fromY, int toX, int toY)
         {
-            Sequence sequence = DOTween.Sequence();
-            sequence.Append(_tileSpots[fromY][fromX].AnimatedSetTile(_tiles[toY][toX]));
-            sequence.Join(_tileSpots[toY][toX].AnimatedSetTile(_tiles[fromY][fromX]));
+            int fromIndex = ToIndex(fromX, fromY);
+            int toIndex = ToIndex(toX, toY);
 
-            (_tiles[toY][toX], _tiles[fromY][fromX]) = (_tiles[fromY][fromX], _tiles[toY][toX]);
+            Sequence sequence = DOTween.Sequence();
+            sequence.Append(_tileSpots[fromIndex].AnimatedSetTile(_tiles[toIndex]));
+            sequence.Join(_tileSpots[toIndex].AnimatedSetTile(_tiles[fromIndex]));
+
+            (_tiles[toIndex], _tiles[fromIndex]) = (_tiles[fromIndex], _tiles[toIndex]);
 
             return sequence;
         }
 
-        #region Events
-        private void TileSpot_Clicked(int x, int y)
-        {
-            TileClicked(x, y);
-        }
-        #endregion
+        private int ToIndex(int x, int y) => y * _width + x;
     }
 }

@@ -1,8 +1,8 @@
 ﻿namespace Gazeus.DesafioMatch3.Models
 {
-    public class Tile
+    public struct Tile
     {
-        public int Id { get; set; }
-        public int Type { get; set; }
+        public int Id;
+        public int Type;
     }
 }

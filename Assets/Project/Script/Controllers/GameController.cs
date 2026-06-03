@@ -10,16 +10,19 @@ namespace Gazeus.DesafioMatch3.Controllers
 {
     public class GameController : MonoBehaviour
     {
-        [SerializeField] private BoardView _boardView;
-        [SerializeField] private int _boardHeight = 10;
-        [SerializeField] private int _boardWidth = 10;
+        [SerializeField] 
+        private BoardView _boardView;
+        [SerializeField] 
+        private int _boardHeight = 10;
+        [SerializeField] 
+        private int _boardWidth = 10;
 
         private GameService _gameService;
         private bool _isAnimating;
         private int _selectedX = -1;
         private int _selectedY = -1;
 
-        #region Unity
+        #region Unity Callbacks
         private void Awake()
         {
             _gameService = new GameService();
@@ -33,34 +36,31 @@ namespace Gazeus.DesafioMatch3.Controllers
 
         private void Start()
         {
-            List<List<Tile>> board = _gameService.StartGame(_boardWidth, _boardHeight);
+            BoardState board = _gameService.StartGame(_boardWidth, _boardHeight);
             _boardView.CreateBoard(board);
         }
         #endregion
 
-        private void AnimateBoard(List<BoardSequence> boardSequences, int index, Action onComplete)
+        private void AnimateBoard(List<BoardSequence> boardSequences, Action onComplete)
         {
-            BoardSequence boardSequence = boardSequences[index];
-
             Sequence sequence = DOTween.Sequence();
-            sequence.Append(_boardView.DestroyTiles(boardSequence.MatchedPosition));
-            sequence.Append(_boardView.MoveTiles(boardSequence.MovedTiles));
-            sequence.Append(_boardView.CreateTile(boardSequence.AddedTiles));
 
-            index += 1;
-            if (index < boardSequences.Count)
+            foreach (var boardSequence in boardSequences)
             {
-                sequence.onComplete += () => AnimateBoard(boardSequences, index, onComplete);
+                sequence.Append(_boardView.DestroyTiles(boardSequence.MatchedPosition));
+                sequence.Append(_boardView.MoveTiles(boardSequence.MovedTiles));
+                sequence.Append(_boardView.CreateTile(boardSequence.AddedTiles));
             }
-            else
-            {
-                sequence.onComplete += () => onComplete();
-            }
+
+            sequence.onComplete += () => onComplete();
         }
 
         private void OnTileClick(int x, int y)
         {
-            if (_isAnimating) return;
+            if (_isAnimating)
+            {
+                return;
+            }
 
             if (_selectedX > -1 && _selectedY > -1)
             {
@@ -71,21 +71,25 @@ namespace Gazeus.DesafioMatch3.Controllers
                 }
                 else
                 {
+                    int fromX = _selectedX;
+                    int fromY = _selectedY;
+                    bool isValid = _gameService.IsValidMovement(fromX, fromY, x, y);
+
                     _isAnimating = true;
-                    _boardView.SwapTiles(_selectedX, _selectedY, x, y).onComplete += () =>
+                    _selectedX = -1;
+                    _selectedY = -1;
+
+                    _boardView.SwapTiles(fromX, fromY, x, y).onComplete += () =>
                     {
-                        bool isValid = _gameService.IsValidMovement(_selectedX, _selectedY, x, y);
                         if (isValid)
                         {
-                            List<BoardSequence> swapResult = _gameService.SwapTile(_selectedX, _selectedY, x, y);
-                            AnimateBoard(swapResult, 0, () => _isAnimating = false);
+                            List<BoardSequence> swapResult = _gameService.SwapTile(fromX, fromY, x, y);
+                            AnimateBoard(swapResult, () => _isAnimating = false);
                         }
                         else
                         {
-                            _boardView.SwapTiles(x, y, _selectedX, _selectedY).onComplete += () => _isAnimating = false;
+                            _boardView.SwapTiles(x, y, fromX, fromY).onComplete += () => _isAnimating = false;
                         }
-                        _selectedX = -1;
-                        _selectedY = -1;
                     };
                 }
             }
