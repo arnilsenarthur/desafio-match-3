@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -5,6 +6,7 @@ namespace Gazeus.DesafioMatch3
 {
     public class FlexibleGridLayout : LayoutGroup
     {
+        public event Action LayoutUpdated;
         [SerializeField] 
         private int _rows;
         [SerializeField] 
@@ -71,6 +73,8 @@ namespace Gazeus.DesafioMatch3
                 SetChildAlongAxis(item, 0, xPos, cellWidth);
                 SetChildAlongAxis(item, 1, yPos, cellHeight);
             }
+
+            LayoutUpdated?.Invoke();
         }
 
         public override void CalculateLayoutInputVertical() { }

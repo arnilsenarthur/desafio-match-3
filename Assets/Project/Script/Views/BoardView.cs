@@ -30,11 +30,17 @@ namespace Gazeus.DesafioMatch3.Views
         private void Awake()
         {
             _boardRect = _boardContainer.transform as RectTransform;
+            _boardContainer.LayoutUpdated += OnBoardLayoutUpdated;
 
             GameObject poolObject = new GameObject("TilePool");
             poolObject.transform.SetParent(transform, false);
             _poolRoot = poolObject.transform;
             _tilePool = new TileObjectPool(_tilePrefabRepository.TileTypePrefabList, _poolRoot);
+        }
+
+        private void OnDestroy()
+        {
+            _boardContainer.LayoutUpdated -= OnBoardLayoutUpdated;
         }
 
         public void CreateBoard(BoardState board)
@@ -154,6 +160,24 @@ namespace Gazeus.DesafioMatch3.Views
             (_tiles[toIndex], _tiles[fromIndex]) = (_tiles[fromIndex], _tiles[toIndex]);
 
             return sequence;
+        }
+
+        private void OnBoardLayoutUpdated()
+        {
+            if (_tiles == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < _tiles.Length; i++)
+            {
+                if (_tiles[i] == null)
+                {
+                    continue;
+                }
+
+                _tileSpots[i].SnapTile(_tiles[i]);
+            }
         }
 
         private int ToIndex(int x, int y) => y * _width + x;
