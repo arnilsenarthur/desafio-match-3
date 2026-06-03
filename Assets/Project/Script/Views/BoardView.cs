@@ -8,17 +8,20 @@ using UnityEngine.EventSystems;
 
 namespace Gazeus.DesafioMatch3.Views
 {
-    public class BoardView : MonoBehaviour, IPointerClickHandler
+    public class BoardView : MonoBehaviour, IPointerClickHandler, IPointerMoveHandler, IPointerExitHandler
     {
         public event Action<int, int> TileClicked;
 
-        [SerializeField] 
-        private FlexibleGridLayout _boardContainer;
-        [SerializeField] 
-        private TilePrefabRepository _tilePrefabRepository;
-        [SerializeField] 
-        private TileSpotView _tileSpotPrefab;
+        private const float NormalScale = 1f;
+        private const float HoverScale = 1.1f;
+        private const float SelectedScale = 1.15f;
+        private const float ClickPunchScale = 0.92f;
+        private const float ScaleTweenDuration = 0.12f;
+        private const float ClickPunchDuration = 0.08f;
 
+        [SerializeField] private TileSpotView _tileSpotPrefab;
+
+        private FlexibleGridLayout _boardContainer;
         private int _width;
         private int _height;
         private GameObject[] _tiles;
@@ -26,21 +29,93 @@ namespace Gazeus.DesafioMatch3.Views
         private TileObjectPool _tilePool;
         private Transform _poolRoot;
         private RectTransform _boardRect;
+        private int _hoverIndex = -1;
+        private int _selectedIndex = -1;
+        private bool _interactionEnabled = true;
+
+        public bool HasSelection => _selectedIndex >= 0;
 
         private void Awake()
         {
-            _boardRect = _boardContainer.transform as RectTransform;
+            _boardRect = (RectTransform)transform;
+            _boardContainer = GetComponent<FlexibleGridLayout>();
             _boardContainer.LayoutUpdated += OnBoardLayoutUpdated;
 
             GameObject poolObject = new GameObject("TilePool");
             poolObject.transform.SetParent(transform, false);
             _poolRoot = poolObject.transform;
-            _tilePool = new TileObjectPool(_tilePrefabRepository.TileTypePrefabList, _poolRoot);
+        }
+
+        public void Configure(GameConfig config)
+        {
+            _tilePool = new TileObjectPool(config.TilePrefabRepository.TileTypePrefabList, _poolRoot);
         }
 
         private void OnDestroy()
         {
             _boardContainer.LayoutUpdated -= OnBoardLayoutUpdated;
+        }
+
+        public bool TryGetSelectedCell(out int x, out int y)
+        {
+            if (_selectedIndex < 0)
+            {
+                x = -1;
+                y = -1;
+                return false;
+            }
+
+            IndexToCell(_selectedIndex, out x, out y);
+            return true;
+        }
+
+        public bool IsSelectedCell(int x, int y) => _selectedIndex == ToIndex(x, y);
+
+        public void SelectCell(int x, int y)
+        {
+            ClearSelection();
+            _selectedIndex = ToIndex(x, y);
+            ApplyScaleForIndex(_selectedIndex);
+        }
+
+        public void SyncFromState(BoardState board)
+        {
+            for (int y = 0; y < _height; y++)
+            {
+                for (int x = 0; x < _width; x++)
+                {
+                    int index = ToIndex(x, y);
+                    int type = board.GetType(x, y);
+                    GameObject currentTile = _tiles[index];
+
+                    if (type < 0)
+                    {
+                        if (currentTile != null)
+                        {
+                            _tilePool.Release(currentTile);
+                            _tiles[index] = null;
+                        }
+
+                        continue;
+                    }
+
+                    if (currentTile != null)
+                    {
+                        PooledTile pooled = currentTile.GetComponent<PooledTile>();
+                        if (pooled != null && pooled.TypeIndex == type)
+                        {
+                            _tileSpots[index].SnapTile(currentTile);
+                            continue;
+                        }
+
+                        _tilePool.Release(currentTile);
+                    }
+
+                    GameObject tile = _tilePool.Get(type);
+                    _tileSpots[index].SetTile(tile);
+                    _tiles[index] = tile;
+                }
+            }
         }
 
         public void CreateBoard(BoardState board)
@@ -74,22 +149,62 @@ namespace Gazeus.DesafioMatch3.Views
             }
         }
 
+        public void SetInteractionEnabled(bool enabled)
+        {
+            if (_interactionEnabled == enabled)
+            {
+                return;
+            }
+
+            _interactionEnabled = enabled;
+
+            if (!enabled)
+            {
+                ClearHover();
+                ClearSelection();
+            }
+        }
+
+        public void ClearSelection()
+        {
+            if (_selectedIndex < 0)
+            {
+                return;
+            }
+
+            int previousSelected = _selectedIndex;
+            _selectedIndex = -1;
+            ApplyScaleForIndex(previousSelected);
+        }
+
+        public void OnPointerMove(PointerEventData eventData)
+        {
+            if (!_interactionEnabled)
+            {
+                return;
+            }
+
+            UpdateHover(eventData);
+        }
+
+        public void OnPointerExit(PointerEventData eventData)
+        {
+            ClearHover();
+        }
+
         public void OnPointerClick(PointerEventData eventData)
         {
-            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(
-                    _boardRect,
-                    eventData.position,
-                    eventData.pressEventCamera,
-                    out Vector2 localPoint))
+            if (!_interactionEnabled)
             {
                 return;
             }
 
-            if (!_boardContainer.TryGetCellCoordinates(localPoint, out int x, out int y))
+            if (!TryGetCellFromPointer(eventData, out int x, out int y, out int index))
             {
                 return;
             }
 
+            PunchTile(index);
             TileClicked?.Invoke(x, y);
         }
 
@@ -106,7 +221,7 @@ namespace Gazeus.DesafioMatch3.Views
                 _tiles[index] = tile;
 
                 tile.transform.localScale = Vector3.zero;
-                sequence.Join(tile.transform.DOScale(1f, 0.2f));
+                sequence.Join(tile.transform.DOScale(GetTargetScaleForIndex(index), 0.2f));
             }
 
             return sequence;
@@ -180,6 +295,115 @@ namespace Gazeus.DesafioMatch3.Views
             }
         }
 
+        private bool TryGetCellFromPointer(PointerEventData eventData, out int x, out int y, out int index)
+        {
+            x = -1;
+            y = -1;
+            index = -1;
+
+            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                    _boardRect,
+                    eventData.position,
+                    eventData.pressEventCamera,
+                    out Vector2 localPoint))
+            {
+                return false;
+            }
+
+            if (!_boardContainer.TryGetCellCoordinates(localPoint, out x, out y))
+            {
+                return false;
+            }
+
+            index = ToIndex(x, y);
+            return true;
+        }
+
+        private void UpdateHover(PointerEventData eventData)
+        {
+            if (!TryGetCellFromPointer(eventData, out _, out _, out int index))
+            {
+                ClearHover();
+                return;
+            }
+
+            if (index == _hoverIndex)
+            {
+                return;
+            }
+
+            int previousHover = _hoverIndex;
+            _hoverIndex = index;
+
+            if (previousHover >= 0)
+            {
+                ApplyScaleForIndex(previousHover);
+            }
+
+            ApplyScaleForIndex(_hoverIndex);
+        }
+
+        private void ClearHover()
+        {
+            if (_hoverIndex < 0)
+            {
+                return;
+            }
+
+            int previousHover = _hoverIndex;
+            _hoverIndex = -1;
+            ApplyScaleForIndex(previousHover);
+        }
+
+        private void PunchTile(int index)
+        {
+            if (index < 0 || _tiles == null || _tiles[index] == null)
+            {
+                return;
+            }
+
+            Transform tileTransform = _tiles[index].transform;
+            tileTransform.DOKill();
+            tileTransform
+                .DOScale(ClickPunchScale, ClickPunchDuration)
+                .SetEase(Ease.OutQuad)
+                .OnComplete(() => ApplyScaleForIndex(index));
+        }
+
+        private void ApplyScaleForIndex(int index)
+        {
+            if (index < 0 || _tiles == null || _tiles[index] == null)
+            {
+                return;
+            }
+
+            float targetScale = GetTargetScaleForIndex(index);
+            Transform tileTransform = _tiles[index].transform;
+            tileTransform.DOKill();
+            tileTransform.DOScale(targetScale, ScaleTweenDuration).SetEase(Ease.OutQuad);
+        }
+
+        private float GetTargetScaleForIndex(int index)
+        {
+            if (index == _selectedIndex)
+            {
+                return SelectedScale;
+            }
+
+            if (index == _hoverIndex)
+            {
+                return HoverScale;
+            }
+
+            return NormalScale;
+        }
+
         private int ToIndex(int x, int y) => y * _width + x;
+
+        private void IndexToCell(int index, out int x, out int y)
+        {
+            x = index % _width;
+            y = index / _width;
+        }
     }
 }

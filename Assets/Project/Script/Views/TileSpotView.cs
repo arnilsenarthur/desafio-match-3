@@ -25,6 +25,7 @@ namespace Gazeus.DesafioMatch3.Views
         public void SetTile(GameObject tile)
         {
             SnapTile(tile);
+            tile.transform.localScale = Vector3.one;
         }
 
         public void SnapTile(GameObject tile)

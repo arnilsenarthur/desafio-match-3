@@ -1,7 +1,9 @@
 {
     "name": "DesafioMatch3",
     "rootNamespace": "Gazeus.DesafioMatch3",
-    "references": [],
+    "references": [
+        "Unity.TextMeshPro"
+    ],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,

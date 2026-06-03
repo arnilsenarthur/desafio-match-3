@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using DG.Tweening;
 using Gazeus.DesafioMatch3.Core;
 using Gazeus.DesafioMatch3.Models;
+using Gazeus.DesafioMatch3.ScriptableObjects;
 using Gazeus.DesafioMatch3.Views;
 using UnityEngine;
 
@@ -10,23 +11,19 @@ namespace Gazeus.DesafioMatch3.Controllers
 {
     public class GameController : MonoBehaviour
     {
-        [SerializeField] 
-        private BoardView _boardView;
-        [SerializeField] 
-        private int _boardHeight = 10;
-        [SerializeField] 
-        private int _boardWidth = 10;
+        [SerializeField] private BoardView _boardView;
+        [SerializeField] private GameHudView _hudView;
+        [SerializeField] private GameConfig _gameConfig;
 
         private GameService _gameService;
         private bool _isAnimating;
-        private int _selectedX = -1;
-        private int _selectedY = -1;
 
-        #region Unity Callbacks
         private void Awake()
         {
-            _gameService = new GameService();
+            _boardView.Configure(_gameConfig);
+            _gameService = new GameService(_gameConfig);
             _boardView.TileClicked += OnTileClick;
+            _hudView.Bind(_gameService.Events);
         }
 
         private void OnDestroy()
@@ -36,16 +33,21 @@ namespace Gazeus.DesafioMatch3.Controllers
 
         private void Start()
         {
-            BoardState board = _gameService.StartGame(_boardWidth, _boardHeight);
+            BoardState board = _gameService.Start();
             _boardView.CreateBoard(board);
         }
-        #endregion
+
+        private void Update()
+        {
+            _gameService.TimerPaused = _isAnimating;
+            _gameService.Tick(Time.deltaTime);
+        }
 
         private void AnimateBoard(List<BoardSequence> boardSequences, Action onComplete)
         {
             Sequence sequence = DOTween.Sequence();
 
-            foreach (var boardSequence in boardSequences)
+            foreach (BoardSequence boardSequence in boardSequences)
             {
                 sequence.Append(_boardView.DestroyTiles(boardSequence.MatchedPosition));
                 sequence.Append(_boardView.MoveTiles(boardSequence.MovedTiles));
@@ -57,47 +59,64 @@ namespace Gazeus.DesafioMatch3.Controllers
 
         private void OnTileClick(int x, int y)
         {
-            if (_isAnimating)
+            if (_isAnimating || _gameService.IsGameOver)
             {
                 return;
             }
 
-            if (_selectedX > -1 && _selectedY > -1)
+            if (!_boardView.HasSelection)
             {
-                if (Mathf.Abs(_selectedX - x) + Mathf.Abs(_selectedY - y) > 1)
+                _boardView.SelectCell(x, y);
+                return;
+            }
+
+            if (!_boardView.TryGetSelectedCell(out int fromX, out int fromY))
+            {
+                _boardView.SelectCell(x, y);
+                return;
+            }
+
+            if (fromX == x && fromY == y)
+            {
+                _boardView.ClearSelection();
+                return;
+            }
+
+            if (Mathf.Abs(fromX - x) + Mathf.Abs(fromY - y) > 1)
+            {
+                _boardView.SelectCell(x, y);
+                return;
+            }
+
+            bool isValid = _gameService.IsValidMovement(fromX, fromY, x, y);
+
+            _isAnimating = true;
+            _boardView.ClearSelection();
+            _boardView.SetInteractionEnabled(false);
+
+            _boardView.SwapTiles(fromX, fromY, x, y).onComplete += () =>
+            {
+                if (isValid)
                 {
-                    _selectedX = -1;
-                    _selectedY = -1;
+                    List<BoardSequence> swapResult = _gameService.ResolveValidSwap(fromX, fromY, x, y);
+                    AnimateBoard(swapResult, OnSwapAnimationComplete);
                 }
                 else
                 {
-                    int fromX = _selectedX;
-                    int fromY = _selectedY;
-                    bool isValid = _gameService.IsValidMovement(fromX, fromY, x, y);
-
-                    _isAnimating = true;
-                    _selectedX = -1;
-                    _selectedY = -1;
-
-                    _boardView.SwapTiles(fromX, fromY, x, y).onComplete += () =>
-                    {
-                        if (isValid)
-                        {
-                            List<BoardSequence> swapResult = _gameService.SwapTile(fromX, fromY, x, y);
-                            AnimateBoard(swapResult, () => _isAnimating = false);
-                        }
-                        else
-                        {
-                            _boardView.SwapTiles(x, y, fromX, fromY).onComplete += () => _isAnimating = false;
-                        }
-                    };
+                    _boardView.SwapTiles(x, y, fromX, fromY).onComplete += OnSwapAnimationComplete;
                 }
-            }
-            else
+            };
+        }
+
+        private void OnSwapAnimationComplete()
+        {
+            if (_gameService.TryRegenerateBoardIfNoValidMoves())
             {
-                _selectedX = x;
-                _selectedY = y;
+                _boardView.SyncFromState(_gameService.Board);
             }
+
+            _isAnimating = false;
+            _boardView.SetInteractionEnabled(true);
         }
     }
 }
