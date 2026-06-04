@@ -1,8 +1,7 @@
 #if UNITY_EDITOR
 using System;
-using Gazeus.DesafioMatch3.Controllers;
-using Gazeus.DesafioMatch3.Models;
-using Gazeus.DesafioMatch3.ScriptableObjects;
+using Gazeus.DesafioMatch3.Data;
+using Gazeus.DesafioMatch3.Gameplay;
 using UnityEditor;
 using UnityEngine;
 

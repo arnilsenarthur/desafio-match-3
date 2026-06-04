@@ -87,5 +87,5 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ef7629cb8d334314288d2cdd86af0e3f, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: DesafioMatch3::Gazeus.DesafioMatch3.Views.PooledTile
+  m_EditorClassIdentifier: DesafioMatch3::Gazeus.DesafioMatch3.UI.Views.PooledTile
   TypeIndex: 0

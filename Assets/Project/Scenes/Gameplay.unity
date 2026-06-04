@@ -736,7 +736,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c6720846c72053f43877a121dd063aa7, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: DesafioMatch3::Gazeus.DesafioMatch3.Views.GameHudView
+  m_EditorClassIdentifier: DesafioMatch3::Gazeus.DesafioMatch3.UI.Views.GameHudView
   _scoreText: {fileID: 1554870171}
   _timeText: {fileID: 376044005}
   _statusText: {fileID: 1730476554}
@@ -1709,7 +1709,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 1361904666}
-        m_TargetAssemblyTypeName: Gazeus.DesafioMatch3.Controllers.GameplayUiController,
+        m_TargetAssemblyTypeName: Gazeus.DesafioMatch3.UI.Controllers.GameplayUiController,
           DesafioMatch3
         m_MethodName: Resume
         m_Mode: 1
@@ -1980,7 +1980,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 1361904666}
-        m_TargetAssemblyTypeName: Gazeus.DesafioMatch3.Controllers.GameplayUiController,
+        m_TargetAssemblyTypeName: Gazeus.DesafioMatch3.UI.Controllers.GameplayUiController,
           DesafioMatch3
         m_MethodName: ShowMainMenuConfirm
         m_Mode: 1
@@ -2525,7 +2525,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 1361904666}
-        m_TargetAssemblyTypeName: Gazeus.DesafioMatch3.Controllers.GameplayUiController,
+        m_TargetAssemblyTypeName: Gazeus.DesafioMatch3.UI.Controllers.GameplayUiController,
           DesafioMatch3
         m_MethodName: Retry
         m_Mode: 1
@@ -2796,7 +2796,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 1361904666}
-        m_TargetAssemblyTypeName: Gazeus.DesafioMatch3.Controllers.GameplayUiController,
+        m_TargetAssemblyTypeName: Gazeus.DesafioMatch3.UI.Controllers.GameplayUiController,
           DesafioMatch3
         m_MethodName: GoToMainMenu
         m_Mode: 1
@@ -3067,7 +3067,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 1361904666}
-        m_TargetAssemblyTypeName: Gazeus.DesafioMatch3.Controllers.GameplayUiController,
+        m_TargetAssemblyTypeName: Gazeus.DesafioMatch3.UI.Controllers.GameplayUiController,
           DesafioMatch3
         m_MethodName: ShowRestartConfirm
         m_Mode: 1
@@ -3704,7 +3704,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 1361904666}
-        m_TargetAssemblyTypeName: Gazeus.DesafioMatch3.Controllers.GameplayUiController,
+        m_TargetAssemblyTypeName: Gazeus.DesafioMatch3.UI.Controllers.GameplayUiController,
           DesafioMatch3
         m_MethodName: Confirm
         m_Mode: 1
@@ -3975,7 +3975,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 1361904666}
-        m_TargetAssemblyTypeName: Gazeus.DesafioMatch3.Controllers.GameplayUiController,
+        m_TargetAssemblyTypeName: Gazeus.DesafioMatch3.UI.Controllers.GameplayUiController,
           DesafioMatch3
         m_MethodName: CancelConfirm
         m_Mode: 1
