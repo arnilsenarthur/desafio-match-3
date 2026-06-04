@@ -5,22 +5,28 @@ using Gazeus.DesafioMatch3.Data;
 using Gazeus.DesafioMatch3.Gameplay;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.UI;
+using Gazeus.DesafioMatch3;
 
 namespace Gazeus.DesafioMatch3.UI.Views
 {
     public class BoardView : MonoBehaviour, IPointerClickHandler, IPointerMoveHandler, IPointerExitHandler
     {
-        public event Action<int, int> TileClicked;
+        public event Action<Vector2Int> TileClicked;
 
         private const float NormalScale = 1f;
         private const float HoverScale = 1.1f;
         private const float SelectedScale = 1.15f;
+        private const float TutorialHintScale = 1.1f;
         private const float ClickPunchScale = 0.92f;
         private const float ScaleTweenDuration = 0.12f;
         private const float ClickPunchDuration = 0.08f;
 
         [SerializeField]
         private TileSpotView _tileSpotPrefab;
+
+        [SerializeField]
+        private TutorialBoardHintsView _tutorialHints;
 
         private FlexibleGridLayout _boardContainer;
         private int _width;
@@ -30,9 +36,13 @@ namespace Gazeus.DesafioMatch3.UI.Views
         private TileObjectPool _tilePool;
         private Transform _poolRoot;
         private RectTransform _boardRect;
+        private GameEvents _gameEvents;
         private int _hoverIndex = -1;
         private int _selectedIndex = -1;
         private bool _interactionEnabled = true;
+        private bool _tutorialGuideActive;
+        private Vector2Int _tutorialSelectCell = BoardCell.Invalid;
+        private Vector2Int _tutorialSwapTargetCell = BoardCell.Invalid;
 
         public bool HasSelection => _selectedIndex >= 0;
 
@@ -45,15 +55,41 @@ namespace Gazeus.DesafioMatch3.UI.Views
             GameObject poolObject = new GameObject("TilePool");
             poolObject.transform.SetParent(transform, false);
             _poolRoot = poolObject.transform;
+            SetIgnoreLayout(poolObject);
+
+            if (_tutorialHints == null)
+            {
+                _tutorialHints = GetComponentInChildren<TutorialBoardHintsView>(true);
+            }
+
+            EnsureTutorialHintsSetup();
+            _tutorialHints?.Hide();
         }
 
-        public void Configure(GameConfig config)
+        public void Configure(GameConfig config, GameEvents gameEvents = null)
         {
             _tilePool = new TileObjectPool(config.TileTypeRegistry.GetPrefabLookupTable(), _poolRoot);
+
+            if (_gameEvents != null)
+            {
+                _gameEvents.TutorialGuideChanged -= OnTutorialGuideChanged;
+            }
+
+            _gameEvents = gameEvents;
+
+            if (_gameEvents != null)
+            {
+                _gameEvents.TutorialGuideChanged += OnTutorialGuideChanged;
+            }
         }
 
         private void OnDestroy()
         {
+            if (_gameEvents != null)
+            {
+                _gameEvents.TutorialGuideChanged -= OnTutorialGuideChanged;
+            }
+
             if (_boardContainer != null)
             {
                 _boardContainer.LayoutUpdated -= OnBoardLayoutUpdated;
@@ -76,30 +112,43 @@ namespace Gazeus.DesafioMatch3.UI.Views
             }
         }
 
-        public bool TryGetSelectedCell(out int x, out int y)
+        public bool TryGetSelectedCell(out Vector2Int cell)
         {
             if (_selectedIndex < 0)
             {
-                x = -1;
-                y = -1;
+                cell = BoardCell.Invalid;
                 return false;
             }
 
-            IndexToCell(_selectedIndex, out x, out y);
+            cell = IndexToCell(_selectedIndex);
             return true;
         }
 
-        public bool IsSelectedCell(int x, int y) => _selectedIndex == ToIndex(x, y);
+        public bool IsSelectedCell(Vector2Int cell) => _selectedIndex == ToIndex(cell);
 
-        public void SelectCell(int x, int y)
+        public void SelectCell(Vector2Int cell)
         {
-            ClearSelection();
-            _selectedIndex = ToIndex(x, y);
+            ClearSelection(keepTutorialSwapHint: _tutorialGuideActive && cell == _tutorialSelectCell);
+            _selectedIndex = ToIndex(cell);
             ApplyScaleForIndex(_selectedIndex);
+
+            if (_tutorialGuideActive && cell == _tutorialSelectCell)
+            {
+                _tutorialHints?.OnTutorialSelectCellChosen();
+            }
         }
 
-        public void SyncFromState(BoardState board)
+        public void SyncFromState(BoardState board) => RefreshAllTilesFromState(board, forceRecreate: false);
+
+        public void RebuildFromState(BoardState board) => RefreshAllTilesFromState(board, forceRecreate: true);
+
+        private void RefreshAllTilesFromState(BoardState board, bool forceRecreate)
         {
+            if (_tiles == null || board.Width != _width || board.Height != _height)
+            {
+                return;
+            }
+
             for (int y = 0; y < _height; y++)
             {
                 for (int x = 0; x < _width; x++)
@@ -119,7 +168,7 @@ namespace Gazeus.DesafioMatch3.UI.Views
                         continue;
                     }
 
-                    if (currentTile != null)
+                    if (!forceRecreate && currentTile != null)
                     {
                         PooledTile pooled = currentTile.GetComponent<PooledTile>();
                         if (pooled != null && pooled.TypeIndex == type)
@@ -128,6 +177,10 @@ namespace Gazeus.DesafioMatch3.UI.Views
                             continue;
                         }
 
+                        _tilePool.Release(currentTile);
+                    }
+                    else if (currentTile != null)
+                    {
                         _tilePool.Release(currentTile);
                     }
 
@@ -218,7 +271,7 @@ namespace Gazeus.DesafioMatch3.UI.Views
             }
         }
 
-        public void ClearSelection()
+        public void ClearSelection(bool keepTutorialSwapHint = false)
         {
             if (_selectedIndex < 0)
             {
@@ -228,6 +281,189 @@ namespace Gazeus.DesafioMatch3.UI.Views
             int previousSelected = _selectedIndex;
             _selectedIndex = -1;
             ApplyScaleForIndex(previousSelected);
+
+            if (_tutorialGuideActive && !keepTutorialSwapHint)
+            {
+                _tutorialHints?.ResetToSelectPhase();
+            }
+        }
+
+        private void OnTutorialGuideChanged(TutorialGuideEventArgs args)
+        {
+            if (!args.IsActive)
+            {
+                ClearTutorialGuide();
+                return;
+            }
+
+            ActivateTutorialGuide(args.SelectCell, args.SwapTargetCell);
+        }
+
+        private void ActivateTutorialGuide(Vector2Int selectCell, Vector2Int swapTargetCell)
+        {
+            ClearTutorialGuide();
+            _tutorialGuideActive = true;
+            _tutorialSelectCell = selectCell;
+            _tutorialSwapTargetCell = swapTargetCell;
+
+            ApplyScaleForIndex(ToIndex(_tutorialSelectCell));
+            ApplyScaleForIndex(ToIndex(_tutorialSwapTargetCell));
+            ShowTutorialHints(selectCell, swapTargetCell);
+        }
+
+        private void ShowTutorialHints(Vector2Int selectCell, Vector2Int swapTargetCell)
+        {
+            if (_tutorialHints == null)
+            {
+                return;
+            }
+
+            EnsureTutorialHintsSetup();
+            _tutorialHints.transform.SetAsLastSibling();
+            Canvas.ForceUpdateCanvases();
+            LayoutRebuilder.ForceRebuildLayoutImmediate(_boardRect);
+
+            if (_tutorialHints.ShowSwapHint(selectCell, swapTargetCell))
+            {
+                return;
+            }
+
+            StartCoroutine(ShowTutorialHintsAfterLayout(selectCell, swapTargetCell));
+        }
+
+        private System.Collections.IEnumerator ShowTutorialHintsAfterLayout(
+            Vector2Int selectCell,
+            Vector2Int swapTargetCell)
+        {
+            yield return null;
+            Canvas.ForceUpdateCanvases();
+            LayoutRebuilder.ForceRebuildLayoutImmediate(_boardRect);
+            _tutorialHints?.ShowSwapHint(selectCell, swapTargetCell);
+        }
+
+        private void EnsureTutorialHintsSetup()
+        {
+            if (_tutorialHints == null)
+            {
+                return;
+            }
+
+            SetIgnoreLayout(_tutorialHints.gameObject);
+        }
+
+        private static void SetIgnoreLayout(GameObject target)
+        {
+            LayoutElement layoutElement = target.GetComponent<LayoutElement>();
+            if (layoutElement == null)
+            {
+                layoutElement = target.AddComponent<LayoutElement>();
+            }
+
+            layoutElement.ignoreLayout = true;
+        }
+
+        private void ClearTutorialGuide()
+        {
+            int previousSelect = BoardCell.IsValid(_tutorialSelectCell) ? ToIndex(_tutorialSelectCell) : -1;
+            int previousSwapTarget = BoardCell.IsValid(_tutorialSwapTargetCell) ? ToIndex(_tutorialSwapTargetCell) : -1;
+            _tutorialGuideActive = false;
+            _tutorialSelectCell = BoardCell.Invalid;
+            _tutorialSwapTargetCell = BoardCell.Invalid;
+
+            if (previousSelect >= 0)
+            {
+                ApplyScaleForIndex(previousSelect);
+            }
+
+            if (previousSwapTarget >= 0 && previousSwapTarget != previousSelect)
+            {
+                ApplyScaleForIndex(previousSwapTarget);
+            }
+
+            _tutorialHints?.Hide();
+        }
+
+        public bool CanSelectTutorialCell(Vector2Int cell)
+        {
+            if (!_tutorialGuideActive)
+            {
+                return true;
+            }
+
+            if (!HasSelection)
+            {
+                return cell == _tutorialSelectCell;
+            }
+
+            if (!TryGetSelectedCell(out Vector2Int selectedCell))
+            {
+                return false;
+            }
+
+            if (cell == selectedCell)
+            {
+                return true;
+            }
+
+            return selectedCell == _tutorialSelectCell && cell == _tutorialSwapTargetCell;
+        }
+
+        public bool TryGetCellAnchoredPosition(Vector2Int cell, RectTransform relativeTo, out Vector2 anchoredPosition)
+        {
+            anchoredPosition = default;
+
+            if (relativeTo == null || !IsOnBoard(cell))
+            {
+                return false;
+            }
+
+            Vector3 worldCenter;
+
+            if (_tileSpots != null)
+            {
+                RectTransform tileRect = _tileSpots[ToIndex(cell)].transform as RectTransform;
+                if (tileRect != null)
+                {
+                    worldCenter = tileRect.TransformPoint(tileRect.rect.center);
+                }
+                else if (_boardContainer != null &&
+                         _boardContainer.TryGetCellCenterLocal(cell, out Vector2 boardLocal))
+                {
+                    worldCenter = _boardRect.TransformPoint(boardLocal);
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            else if (_boardContainer != null &&
+                     _boardContainer.TryGetCellCenterLocal(cell, out Vector2 boardLocal))
+            {
+                worldCenter = _boardRect.TransformPoint(boardLocal);
+            }
+            else
+            {
+                return false;
+            }
+
+            Camera eventCamera = GetEventCamera(relativeTo);
+            Vector2 screenPoint = RectTransformUtility.WorldToScreenPoint(eventCamera, worldCenter);
+            return RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                relativeTo,
+                screenPoint,
+                eventCamera,
+                out anchoredPosition);
+        }
+
+        private static Camera GetEventCamera(RectTransform relativeTo)
+        {
+            Canvas canvas = relativeTo.GetComponentInParent<Canvas>();
+            if (canvas == null)
+            {
+                return null;
+            }
+
+            return canvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : canvas.worldCamera;
         }
 
         public void OnPointerMove(PointerEventData eventData)
@@ -252,13 +488,18 @@ namespace Gazeus.DesafioMatch3.UI.Views
                 return;
             }
 
-            if (!TryGetCellFromPointer(eventData, out int x, out int y, out int index))
+            if (!TryGetCellFromPointer(eventData, out Vector2Int cell, out int index))
+            {
+                return;
+            }
+
+            if (!CanSelectTutorialCell(cell))
             {
                 return;
             }
 
             PunchTile(index);
-            TileClicked?.Invoke(x, y);
+            TileClicked?.Invoke(cell);
         }
 
         public Tween CreateTile(List<AddedTileInfo> addedTiles)
@@ -289,7 +530,17 @@ namespace Gazeus.DesafioMatch3.UI.Views
                 GameObject tile = _tiles[index];
                 _tiles[index] = null;
 
+                if (tile == null)
+                {
+                    continue;
+                }
+
                 sequence.Join(tile.transform.DOScale(0f, 0.2f).OnComplete(() => _tilePool.Release(tile)));
+            }
+
+            if (matchedPosition.Count == 0)
+            {
+                sequence.AppendInterval(0.01f);
             }
 
             return sequence;
@@ -316,10 +567,10 @@ namespace Gazeus.DesafioMatch3.UI.Views
             return sequence;
         }
 
-        public Tween SwapTiles(int fromX, int fromY, int toX, int toY)
+        public Tween SwapTiles(Vector2Int from, Vector2Int to)
         {
-            int fromIndex = ToIndex(fromX, fromY);
-            int toIndex = ToIndex(toX, toY);
+            int fromIndex = ToIndex(from);
+            int toIndex = ToIndex(to);
 
             Sequence sequence = DOTween.Sequence();
             sequence.Append(_tileSpots[fromIndex].AnimatedSetTile(_tiles[toIndex]));
@@ -346,12 +597,16 @@ namespace Gazeus.DesafioMatch3.UI.Views
 
                 _tileSpots[i].SnapTile(_tiles[i]);
             }
+
+            if (_tutorialGuideActive && _tutorialHints != null && _tutorialHints.gameObject.activeSelf)
+            {
+                _tutorialHints.RefreshSwapHint(_tutorialSelectCell, _tutorialSwapTargetCell);
+            }
         }
 
-        private bool TryGetCellFromPointer(PointerEventData eventData, out int x, out int y, out int index)
+        private bool TryGetCellFromPointer(PointerEventData eventData, out Vector2Int cell, out int index)
         {
-            x = -1;
-            y = -1;
+            cell = BoardCell.Invalid;
             index = -1;
 
             if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(
@@ -363,18 +618,25 @@ namespace Gazeus.DesafioMatch3.UI.Views
                 return false;
             }
 
-            if (!_boardContainer.TryGetCellCoordinates(localPoint, out x, out y))
+            if (!_boardContainer.TryGetCellCoordinates(localPoint, out int x, out int y))
             {
                 return false;
             }
 
-            index = ToIndex(x, y);
+            cell = BoardCell.At(x, y);
+            index = ToIndex(cell);
             return true;
         }
 
         private void UpdateHover(PointerEventData eventData)
         {
-            if (!TryGetCellFromPointer(eventData, out _, out _, out int index))
+            if (!TryGetCellFromPointer(eventData, out Vector2Int cell, out int index))
+            {
+                ClearHover();
+                return;
+            }
+
+            if (!CanSelectTutorialCell(cell))
             {
                 ClearHover();
                 return;
@@ -443,6 +705,12 @@ namespace Gazeus.DesafioMatch3.UI.Views
                 return SelectedScale;
             }
 
+            if ((BoardCell.IsValid(_tutorialSelectCell) && index == ToIndex(_tutorialSelectCell)) ||
+                (BoardCell.IsValid(_tutorialSwapTargetCell) && index == ToIndex(_tutorialSwapTargetCell)))
+            {
+                return TutorialHintScale;
+            }
+
             if (index == _hoverIndex)
             {
                 return HoverScale;
@@ -451,12 +719,13 @@ namespace Gazeus.DesafioMatch3.UI.Views
             return NormalScale;
         }
 
+        private int ToIndex(Vector2Int cell) => cell.y * _width + cell.x;
+
         private int ToIndex(int x, int y) => y * _width + x;
 
-        private void IndexToCell(int index, out int x, out int y)
-        {
-            x = index % _width;
-            y = index / _width;
-        }
+        private Vector2Int IndexToCell(int index) => BoardCell.At(index % _width, index / _width);
+
+        private bool IsOnBoard(Vector2Int cell) =>
+            cell.x >= 0 && cell.y >= 0 && cell.x < _width && cell.y < _height;
     }
 }

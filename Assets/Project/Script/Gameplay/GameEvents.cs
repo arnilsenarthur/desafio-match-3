@@ -16,6 +16,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
         public event Action<BoardRegeneratedEventArgs> BoardRegenerated;
         public event Action<GameEndedEventArgs> GameEnded;
         public event Action<CountdownChangedEventArgs> CountdownChanged;
+        public event Action<TutorialGuideEventArgs> TutorialGuideChanged;
 
         public void RaiseGameStarted(GameStartedEventArgs args) => GameStarted?.Invoke(args);
         public void RaiseScoreChanged(ScoreChangedEventArgs args) => ScoreChanged?.Invoke(args);
@@ -26,6 +27,26 @@ namespace Gazeus.DesafioMatch3.Gameplay
         public void RaiseBoardRegenerated(BoardRegeneratedEventArgs args) => BoardRegenerated?.Invoke(args);
         public void RaiseGameEnded(GameEndedEventArgs args) => GameEnded?.Invoke(args);
         public void RaiseCountdownChanged(CountdownChangedEventArgs args) => CountdownChanged?.Invoke(args);
+
+        public void RaiseTutorialGuideChanged(TutorialGuideEventArgs args) =>
+            TutorialGuideChanged?.Invoke(args);
+    }
+
+    public readonly struct TutorialGuideEventArgs
+    {
+        public bool IsActive { get; }
+        public Vector2Int SelectCell { get; }
+        public Vector2Int SwapTargetCell { get; }
+
+        public TutorialGuideEventArgs(bool isActive, Vector2Int selectCell, Vector2Int swapTargetCell)
+        {
+            IsActive = isActive;
+            SelectCell = selectCell;
+            SwapTargetCell = swapTargetCell;
+        }
+
+        public static TutorialGuideEventArgs Inactive =>
+            new(false, BoardCell.Invalid, BoardCell.Invalid);
     }
 
     public readonly struct GameStartedEventArgs
@@ -84,17 +105,13 @@ namespace Gazeus.DesafioMatch3.Gameplay
 
     public readonly struct SwapStartedEventArgs
     {
-        public int FromX { get; }
-        public int FromY { get; }
-        public int ToX { get; }
-        public int ToY { get; }
+        public Vector2Int From { get; }
+        public Vector2Int To { get; }
 
-        public SwapStartedEventArgs(int fromX, int fromY, int toX, int toY)
+        public SwapStartedEventArgs(Vector2Int from, Vector2Int to)
         {
-            FromX = fromX;
-            FromY = fromY;
-            ToX = toX;
-            ToY = toY;
+            From = from;
+            To = to;
         }
     }
 

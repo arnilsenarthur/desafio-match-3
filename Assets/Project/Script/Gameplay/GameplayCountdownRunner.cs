@@ -43,11 +43,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
 
             while (elapsed < duration)
             {
-                if (!isPaused())
-                {
-                    elapsed += Time.deltaTime;
-                }
-
+                elapsed += Time.deltaTime;
                 yield return null;
             }
         }

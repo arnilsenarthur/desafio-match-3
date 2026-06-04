@@ -1,4 +1,5 @@
 using Gazeus.DesafioMatch3.App;
+using Gazeus.DesafioMatch3.Data;
 using Gazeus.DesafioMatch3.Gameplay;
 using Gazeus.DesafioMatch3.UI;
 using Gazeus.DesafioMatch3.UI.Views;
@@ -34,6 +35,12 @@ namespace Gazeus.DesafioMatch3.UI.Controllers
         [SerializeField]
         private TMP_Text _gameOverMessageText;
 
+        [SerializeField]
+        private GameConfig _gameConfig;
+
+        [SerializeField]
+        private GameplayTutorialController _gameplayTutorial;
+
         private GameEvents _events;
         private ConfirmAction _pendingConfirmAction;
 
@@ -62,6 +69,11 @@ namespace Gazeus.DesafioMatch3.UI.Controllers
 
         private void Awake()
         {
+            if (_gameplayTutorial == null)
+            {
+                _gameplayTutorial = GetComponent<GameplayTutorialController>();
+            }
+
             _pausePanel?.Hide();
             _confirmPanel?.Hide();
             _gameOverPanel?.Hide();
@@ -73,6 +85,26 @@ namespace Gazeus.DesafioMatch3.UI.Controllers
             _events.GameStarted += OnGameStarted;
             _events.GameEnded += OnGameEnded;
         }
+
+        public void HandleMatchReady() => BeginMatchCountdown();
+
+        public bool TryHandleMatchReadyForTutorial()
+        {
+            GameplayTutorialController tutorial = _gameplayTutorial != null
+                ? _gameplayTutorial
+                : GetComponent<GameplayTutorialController>();
+
+            if (tutorial != null && tutorial.TryBeginInteractiveTutorial())
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        public void BeginMatchCountdown() => _gameController.BeginGameplayCountdown();
+
+        public void SkipTutorial() => _gameplayTutorial?.SkipTutorial();
 
         private void OnDestroy()
         {
@@ -95,6 +127,12 @@ namespace Gazeus.DesafioMatch3.UI.Controllers
             if (_confirmPanel != null && _confirmPanel.gameObject.activeSelf)
             {
                 CancelConfirm();
+                return;
+            }
+
+            if (_gameplayTutorial != null && _gameplayTutorial.IsActive)
+            {
+                SkipTutorial();
                 return;
             }
 
@@ -199,7 +237,10 @@ namespace Gazeus.DesafioMatch3.UI.Controllers
         {
             _gameOverPanel?.Hide();
             CancelConfirm();
-            ApplyPause(false);
+            if (_gameplayTutorial == null || !_gameplayTutorial.IsActive)
+            {
+                ApplyPause(false);
+            }
         }
 
         private void OnGameEnded(GameEndedEventArgs args)

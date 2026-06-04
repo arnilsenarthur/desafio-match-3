@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using Gazeus.DesafioMatch3.Data;
 using UnityEngine;
 
@@ -29,6 +30,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
         public float TimeRemaining { get; private set; }
         public int Score { get; private set; }
         public BoardState Board => _board;
+        public bool IsTutorialMode { get; private set; }
 
         public GameService(GameConfig config)
         {
@@ -75,7 +77,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
 
         public void Tick(float deltaTime)
         {
-            if (IsGameOver || TimerPaused || deltaTime <= 0f)
+            if (IsTutorialMode || IsGameOver || TimerPaused || deltaTime <= 0f)
             {
                 return;
             }
@@ -118,14 +120,14 @@ namespace Gazeus.DesafioMatch3.Gameplay
             Events.RaiseTimeChanged(new TimeChangedEventArgs(TimeRemaining, delta));
         }
 
-        public bool IsValidMovement(int fromX, int fromY, int toX, int toY)
+        public bool IsValidMovement(Vector2Int from, Vector2Int to)
         {
             if (IsGameOver)
             {
                 return false;
             }
 
-            return WouldCreateMatchAfterSwap(_board, fromX, fromY, toX, toY);
+            return WouldCreateMatchAfterSwap(_board, from, to);
         }
 
         public bool HasValidMovement()
@@ -135,13 +137,13 @@ namespace Gazeus.DesafioMatch3.Gameplay
                 for (int x = 0; x < _board.Width; x++)
                 {
                     if (x < _board.Width - 1 &&
-                        WouldCreateMatchAfterSwap(_board, x, y, x + 1, y))
+                        WouldCreateMatchAfterSwap(_board, BoardCell.At(x, y), BoardCell.At(x + 1, y)))
                     {
                         return true;
                     }
 
                     if (y < _board.Height - 1 &&
-                        WouldCreateMatchAfterSwap(_board, x, y, x, y + 1))
+                        WouldCreateMatchAfterSwap(_board, BoardCell.At(x, y), BoardCell.At(x, y + 1)))
                     {
                         return true;
                     }
@@ -151,14 +153,17 @@ namespace Gazeus.DesafioMatch3.Gameplay
             return false;
         }
 
-        public List<BoardSequence> ResolveValidSwap(int fromX, int fromY, int toX, int toY)
+        public List<BoardSequence> ResolveValidSwap(Vector2Int from, Vector2Int to)
         {
-            Events.RaiseSwapStarted(new SwapStartedEventArgs(fromX, fromY, toX, toY));
+            Events.RaiseSwapStarted(new SwapStartedEventArgs(from, to));
 
-            TimeRemaining += _config.TimeBonusPerValidSwap;
-            RaiseTimeIfDisplayChanged(force: false);
+            if (!IsTutorialMode)
+            {
+                TimeRemaining += _config.TimeBonusPerValidSwap;
+                RaiseTimeIfDisplayChanged(force: false);
+            }
 
-            List<BoardSequence> sequences = SwapTile(fromX, fromY, toX, toY);
+            List<BoardSequence> sequences = SwapTile(from, to);
             int totalScoreDelta = 0;
 
             for (int i = 0; i < sequences.Count; i++)
@@ -175,12 +180,157 @@ namespace Gazeus.DesafioMatch3.Gameplay
 
             Events.RaiseSwapCompleted(new SwapCompletedEventArgs(sequences, totalScoreDelta));
 
-            if (_config.TargetScore > 0 && Score >= _config.TargetScore)
+            if (!IsTutorialMode && _config.TargetScore > 0 && Score >= _config.TargetScore)
             {
                 EndGame(GameEndReason.TargetScoreReached);
             }
 
             return sequences;
+        }
+
+        public void EnterTutorialMode()
+        {
+            IsTutorialMode = true;
+        }
+
+        public void ExitTutorialMode()
+        {
+            IsTutorialMode = false;
+        }
+
+        public bool IsExpectedTutorialSwap(Vector2Int from, Vector2Int to) =>
+            IsTutorialMode && _activeTutorialStep.MatchesExpectedSwap(from, to);
+
+        public bool IsTutorialSwapValid(Vector2Int from, Vector2Int to)
+        {
+            if (!IsTutorialMode || !_activeTutorialStep.MatchesExpectedSwap(from, to))
+            {
+                return false;
+            }
+
+            return WouldCreateMatchAfterSwap(_board, from, to);
+        }
+
+        public void RegenerateTutorialBaseBoard()
+        {
+            const int maxAttempts = 50;
+            _tileCount = 0;
+
+            for (int attempt = 0; attempt < maxAttempts; attempt++)
+            {
+                for (int y = 0; y < _board.Height; y++)
+                {
+                    for (int x = 0; x < _board.Width; x++)
+                    {
+                        Vector2Int cell = BoardCell.At(x, y);
+                        int type = PickSafeColorType(_board, x, y);
+                        _board.Set(cell, _tileCount++, type);
+                    }
+                }
+
+                if (!HasImmediateMatches(_board))
+                {
+                    break;
+                }
+            }
+
+            _workingBoard.CopyFrom(_board);
+        }
+
+        public void ApplyTutorialStep(TutorialStepDefinition step)
+        {
+            _activeTutorialStep = step;
+            const int maxAttempts = 100;
+            bool boardReady = false;
+
+            for (int attempt = 0; attempt < maxAttempts; attempt++)
+            {
+                BuildTutorialStepBoard(step);
+
+                if (IsTutorialStepBoardValid(step))
+                {
+                    boardReady = true;
+                    break;
+                }
+            }
+
+            if (!boardReady)
+            {
+                Debug.LogWarning(
+                    $"Tutorial step '{step.Title}' could not build a valid board after {maxAttempts} attempts.");
+            }
+
+            _workingBoard.CopyFrom(_board);
+        }
+
+        private bool IsTutorialStepBoardValid(TutorialStepDefinition step)
+        {
+            if (HasImmediateMatches(_board))
+            {
+                return false;
+            }
+
+            if (!BoardCell.AreAdjacent(step.SelectCell, step.SwapTargetCell))
+            {
+                return false;
+            }
+
+            return WouldCreateMatchAfterSwap(_board, step.SelectCell, step.SwapTargetCell);
+        }
+
+        private void BuildTutorialStepBoard(TutorialStepDefinition step)
+        {
+            HashSet<Vector2Int> scriptedCells = GetScriptedCells(step);
+            _tileCount = 0;
+
+            for (int y = 0; y < _board.Height; y++)
+            {
+                for (int x = 0; x < _board.Width; x++)
+                {
+                    _board.Clear(BoardCell.At(x, y));
+                }
+            }
+
+            ApplyStepCells(step);
+
+            for (int y = 0; y < _board.Height; y++)
+            {
+                for (int x = 0; x < _board.Width; x++)
+                {
+                    Vector2Int cell = BoardCell.At(x, y);
+                    if (scriptedCells.Contains(cell))
+                    {
+                        continue;
+                    }
+
+                    int type = PickSafeColorType(_board, x, y);
+                    _board.Set(cell, _tileCount++, type);
+                }
+            }
+        }
+
+        private static HashSet<Vector2Int> GetScriptedCells(TutorialStepDefinition step)
+        {
+            HashSet<Vector2Int> cells = new() { step.SelectCell, step.SwapTargetCell };
+            (Vector2Int cell, int type)[] scripted = step.Cells;
+            for (int i = 0; i < scripted.Length; i++)
+            {
+                cells.Add(scripted[i].cell);
+            }
+
+            return cells;
+        }
+
+        private TutorialStepDefinition _activeTutorialStep;
+
+        private void ApplyStepCells(TutorialStepDefinition step)
+        {
+            (Vector2Int cell, int type)[] cells = step.Cells;
+            for (int i = 0; i < cells.Length; i++)
+            {
+                (Vector2Int cell, int type) entry = cells[i];
+                _board.Set(entry.cell, _tileCount++, entry.type);
+            }
         }
 
         public bool TryRegenerateBoardIfNoValidMoves()
@@ -195,12 +345,14 @@ namespace Gazeus.DesafioMatch3.Gameplay
             return true;
         }
 
-        private bool WouldCreateMatchAfterSwap(BoardState board, int fromX, int fromY, int toX, int toY)
+        private bool WouldCreateMatchAfterSwap(BoardState board, Vector2Int from, Vector2Int to)
         {
-            board.Swap(fromX, fromY, toX, toY);
-            bool valid = TileMatching.CreatesMatchAt(board, _tileRegistry, fromX, fromY) ||
-                         TileMatching.CreatesMatchAt(board, _tileRegistry, toX, toY);
-            board.Swap(fromX, fromY, toX, toY);
+            board.Swap(from, to);
+            bool[] flags = new bool[board.Width * board.Height];
+            List<int> rows = new();
+            List<int> columns = new();
+            bool valid = TileMatching.FindAndMarkMatches(board, _tileRegistry, flags, rows, columns);
+            board.Swap(from, to);
             return valid;
         }
 
@@ -228,10 +380,15 @@ namespace Gazeus.DesafioMatch3.Gameplay
             CreateBoard(_board);
         }
 
-        private List<BoardSequence> SwapTile(int fromX, int fromY, int toX, int toY)
+        private List<BoardSequence> SwapTile(Vector2Int from, Vector2Int to)
         {
+            if (IsTutorialMode)
+            {
+                return SwapTileTutorial(from, to);
+            }
+
             _workingBoard.CopyFrom(_board);
-            _workingBoard.Swap(fromX, fromY, toX, toY);
+            _workingBoard.Swap(from, to);
 
             List<BoardSequence> boardSequences = new();
             bool hasMatches = FindMatches(_workingBoard, _matchedFlags, _clearedRowsScratch, _clearedColumnsScratch);
@@ -302,8 +459,61 @@ namespace Gazeus.DesafioMatch3.Gameplay
             return boardSequences;
         }
 
+        private List<BoardSequence> SwapTileTutorial(Vector2Int from, Vector2Int to)
+        {
+            _workingBoard.CopyFrom(_board);
+            _workingBoard.Swap(from, to);
+
+            if (!FindMatches(_workingBoard, _matchedFlags, _clearedRowsScratch, _clearedColumnsScratch))
+            {
+                _board.CopyFrom(_workingBoard);
+                return new List<BoardSequence>();
+            }
+
+            int skullsCleared = TileMatching.CountSkullsInMatches(_workingBoard, _tileRegistry, _matchedFlags);
+            float skullPenalty = skullsCleared * _config.SkullTimePenaltySeconds;
+            if (skullPenalty > 0f)
+            {
+                AdjustTime(-skullPenalty);
+            }
+
+            _matchedPositions.Clear();
+            for (int y = 0; y < _workingBoard.Height; y++)
+            {
+                for (int x = 0; x < _workingBoard.Width; x++)
+                {
+                    if (!_matchedFlags[_workingBoard.ToIndex(x, y)])
+                    {
+                        continue;
+                    }
+
+                    _matchedPositions.Add(new Vector2Int(x, y));
+                    _workingBoard.Clear(x, y);
+                }
+            }
+
+            BoardSequence sequence = new()
+            {
+                MatchedPosition = new List<Vector2Int>(_matchedPositions),
+                MovedTiles = new List<MovedTileInfo>(),
+                AddedTiles = new List<AddedTileInfo>(),
+                ClearedRows = new List<int>(_clearedRowsScratch),
+                ClearedColumns = new List<int>(_clearedColumnsScratch),
+                SkullsCleared = skullsCleared,
+                SkullTimePenalty = skullPenalty
+            };
+
+            _board.CopyFrom(_workingBoard);
+            return new List<BoardSequence> { sequence };
+        }
+
         private int PickSpawnType(BoardState board, int x, int y)
         {
+            if (IsTutorialMode)
+            {
+                return PickSafeColorType(board, x, y);
+            }
+
             int specialType = RollSpecialTypeId();
             if (specialType >= 0 && !WouldCreateImmediateMatch(board, x, y, specialType))
             {

@@ -42,3 +42,4 @@ MonoBehaviour:
   _bombJokerSpawnChance: 0.02
   _skullSpawnChance: 0.02
   _skullTimePenaltySeconds: 5
+  _showTutorialOnNextMatch: 1

@@ -29,5 +29,18 @@ namespace Gazeus.DesafioMatch3.UI
 
         public static string GameOverMessage(string reasonLine, int score, int best, bool isNewHighScore) =>
             $"{reasonLine}\nScore: {score}\nBest: {best}{(isNewHighScore ? GameOverNewHighScore : string.Empty)}";
+
+        public const string TutorialIntroTitle = "How to Play";
+
+        public const string TutorialIntroBody =
+            "Learn matching, combos, and special tiles on a practice board.\n" +
+            "Then you will start a real match with the timer.";
+
+        public const string TutorialContinueButton = "Start tutorial";
+
+        public const string TutorialSkipButton = "Skip tutorial";
+
+        public static string TutorialStepCounter(int stepIndex, int stepCount) =>
+            $"Step {stepIndex} of {stepCount}";
     }
 }

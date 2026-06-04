@@ -127,5 +127,41 @@ namespace Gazeus.DesafioMatch3
 
             return true;
         }
+
+        public bool TryGetCellCenterLocal(Vector2Int cell, out Vector2 localPoint) =>
+            TryGetCellCenterLocal(cell.x, cell.y, out localPoint);
+
+        public bool TryGetCellCenterLocal(int x, int y, out Vector2 localPoint)
+        {
+            localPoint = default;
+
+            if (x < 0 || y < 0 || x >= _columns || y >= _rows)
+            {
+                return false;
+            }
+
+            Rect rect = rectTransform.rect;
+            if (rect.width <= 0f || rect.height <= 0f)
+            {
+                return false;
+            }
+
+            float totalSpacingX = _spacing.x * (_columns - 1) + padding.left + padding.right;
+            float totalSpacingY = _spacing.y * (_rows - 1) + padding.top + padding.bottom;
+            float cellWidth = (rect.width - totalSpacingX) / _columns;
+            float cellHeight = (rect.height - totalSpacingY) / _rows;
+
+            if (cellWidth <= 0f || cellHeight <= 0f)
+            {
+                return false;
+            }
+
+            float centerFromLeft = padding.left + x * (cellWidth + _spacing.x) + cellWidth * 0.5f;
+            float centerFromTop = padding.top + y * (cellHeight + _spacing.y) + cellHeight * 0.5f;
+            localPoint = new Vector2(
+                centerFromLeft - rect.width * rectTransform.pivot.x,
+                rect.height * (1f - rectTransform.pivot.y) - centerFromTop);
+            return true;
+        }
     }
 }

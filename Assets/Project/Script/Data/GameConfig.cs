@@ -71,6 +71,9 @@ namespace Gazeus.DesafioMatch3.Data
         [SerializeField]
         private float _skullTimePenaltySeconds = 5f;
 
+        [Header("Tutorial"), SerializeField]
+        private bool _showTutorialOnNextMatch = true;
+
         public int BoardWidth => _boardWidth;
         public int BoardHeight => _boardHeight;
         public TileTypeRegistry TileTypeRegistry => _tileTypeRegistry;
@@ -93,6 +96,7 @@ namespace Gazeus.DesafioMatch3.Data
         public float BombJokerSpawnChance => Mathf.Clamp01(_bombJokerSpawnChance);
         public float SkullSpawnChance => Mathf.Clamp01(_skullSpawnChance);
         public float SkullTimePenaltySeconds => Mathf.Max(0f, _skullTimePenaltySeconds);
+        public bool ShowTutorialOnNextMatch => _showTutorialOnNextMatch;
 
         private void OnValidate()
         {
