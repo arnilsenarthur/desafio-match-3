@@ -35,6 +35,7 @@ namespace Gazeus.DesafioMatch3.UI.Views
             _events.GameEnded += OnGameEnded;
             _events.BoardRegenerated += OnBoardRegenerated;
             _events.CountdownChanged += OnCountdownChanged;
+            _events.CascadeStep += OnCascadeStep;
         }
 
         private void OnDestroy() => Unbind();
@@ -52,6 +53,7 @@ namespace Gazeus.DesafioMatch3.UI.Views
             _events.GameEnded -= OnGameEnded;
             _events.BoardRegenerated -= OnBoardRegenerated;
             _events.CountdownChanged -= OnCountdownChanged;
+            _events.CascadeStep -= OnCascadeStep;
             _events = null;
         }
 
@@ -103,6 +105,16 @@ namespace Gazeus.DesafioMatch3.UI.Views
 
         private void OnBoardRegenerated(BoardRegeneratedEventArgs args) =>
             SetStatus(UiText.StatusBoardReshuffled);
+
+        private void OnCascadeStep(CascadeStepEventArgs args)
+        {
+            if (args.Sequence.SkullsCleared <= 0)
+            {
+                return;
+            }
+
+            SetStatus(UiText.SkullTimePenalty(args.Sequence.SkullsCleared, args.Sequence.SkullTimePenalty));
+        }
 
         private void OnGameEnded(GameEndedEventArgs args)
         {

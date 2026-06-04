@@ -12,5 +12,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
         public List<int> ClearedColumns { get; set; } = new();
         public int ScoreDelta { get; set; }
         public int ComboIndex { get; set; }
+        public float SkullTimePenalty { get; set; }
+        public int SkullsCleared { get; set; }
     }
 }

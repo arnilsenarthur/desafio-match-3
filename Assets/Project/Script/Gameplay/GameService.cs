@@ -7,11 +7,12 @@ namespace Gazeus.DesafioMatch3.Gameplay
     public class GameService
     {
         private readonly GameConfig _config;
+        private TileTypeRegistry _tileRegistry;
 
         private BoardState _board;
         private BoardState _workingBoard;
         private bool[] _matchedFlags;
-        private List<int> _tilesTypes;
+        private List<int> _colorTypeIds;
         private List<int> _noMatchTypesScratch;
         private List<Vector2Int> _matchedPositions;
         private List<int> _clearedRowsScratch;
@@ -48,10 +49,18 @@ namespace Gazeus.DesafioMatch3.Gameplay
             Score = 0;
             _lastDisplayedTimeSeconds = -1;
 
-            int tileTypeCount = Mathf.Clamp(difficulty.TileTypeCount, 1, _config.MaxTileTypeCount);
+            _tileRegistry = _config.TileTypeRegistry;
+            if (_tileRegistry == null || !_tileRegistry.IsConfigured)
+            {
+                Debug.LogError(
+                    "Assign a Tile Type Registry with color prefabs, joker, bomb, and skull prefabs.");
+                return false;
+            }
+
+            int colorTypeCount = Mathf.Clamp(difficulty.TileTypeCount, 1, _tileRegistry.ColorCount);
             TimeRemaining = difficulty.StartingTimeSeconds;
 
-            InitializeBoard(_config.BoardWidth, _config.BoardHeight, tileTypeCount);
+            InitializeBoard(_config.BoardWidth, _config.BoardHeight, colorTypeCount);
             RaiseTimeIfDisplayChanged(force: true);
 
             Events.RaiseGameStarted(new GameStartedEventArgs(
@@ -186,18 +195,18 @@ namespace Gazeus.DesafioMatch3.Gameplay
             return true;
         }
 
-        private static bool WouldCreateMatchAfterSwap(BoardState board, int fromX, int fromY, int toX, int toY)
+        private bool WouldCreateMatchAfterSwap(BoardState board, int fromX, int fromY, int toX, int toY)
         {
             board.Swap(fromX, fromY, toX, toY);
-            bool valid = CreatesMatchAt(board, fromX, fromY) ||
-                         CreatesMatchAt(board, toX, toY);
+            bool valid = TileMatching.CreatesMatchAt(board, _tileRegistry, fromX, fromY) ||
+                         TileMatching.CreatesMatchAt(board, _tileRegistry, toX, toY);
             board.Swap(fromX, fromY, toX, toY);
             return valid;
         }
 
         private void InitializeBoard(int boardWidth, int boardHeight, int tileTypeCount)
         {
-            _tilesTypes = BuildTileTypes(tileTypeCount);
+            _colorTypeIds = BuildColorTypeIds(tileTypeCount);
             EnsureBoards(boardWidth, boardHeight);
             RegenerateBoard();
         }
@@ -208,7 +217,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
 
             for (int attempt = 0; attempt < maxAttempts; attempt++)
             {
-                CreateBoard(_board, _tilesTypes);
+                CreateBoard(_board);
 
                 if (HasValidMovement() && !HasImmediateMatches(_board))
                 {
@@ -216,7 +225,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
                 }
             }
 
-            CreateBoard(_board, _tilesTypes);
+            CreateBoard(_board);
         }
 
         private List<BoardSequence> SwapTile(int fromX, int fromY, int toX, int toY)
@@ -229,6 +238,14 @@ namespace Gazeus.DesafioMatch3.Gameplay
 
             while (hasMatches)
             {
+                int skullsCleared = TileMatching.CountSkullsInMatches(_workingBoard, _tileRegistry, _matchedFlags);
+                float skullPenalty = skullsCleared * _config.SkullTimePenaltySeconds;
+
+                if (skullPenalty > 0f)
+                {
+                    AdjustTime(-skullPenalty);
+                }
+
                 _matchedPositions.Clear();
                 for (int y = 0; y < _workingBoard.Height; y++)
                 {
@@ -256,13 +273,13 @@ namespace Gazeus.DesafioMatch3.Gameplay
                             continue;
                         }
 
-                        int tileType = Random.Range(0, _tilesTypes.Count);
+                        int spawnType = PickSpawnType(_workingBoard, x, y);
                         int id = _tileCount++;
-                        _workingBoard.Set(x, y, id, _tilesTypes[tileType]);
+                        _workingBoard.Set(x, y, id, spawnType);
                         _addedTilesList.Add(new AddedTileInfo
                         {
                             Position = new Vector2Int(x, y),
-                            Type = _tilesTypes[tileType]
+                            Type = spawnType
                         });
                     }
                 }
@@ -273,7 +290,9 @@ namespace Gazeus.DesafioMatch3.Gameplay
                     MovedTiles = new List<MovedTileInfo>(_movedTilesList),
                     AddedTiles = new List<AddedTileInfo>(_addedTilesList),
                     ClearedRows = new List<int>(_clearedRowsScratch),
-                    ClearedColumns = new List<int>(_clearedColumnsScratch)
+                    ClearedColumns = new List<int>(_clearedColumnsScratch),
+                    SkullsCleared = skullsCleared,
+                    SkullTimePenalty = skullPenalty
                 });
 
                 hasMatches = FindMatches(_workingBoard, _matchedFlags, _clearedRowsScratch, _clearedColumnsScratch);
@@ -283,10 +302,101 @@ namespace Gazeus.DesafioMatch3.Gameplay
             return boardSequences;
         }
 
-        private static List<int> BuildTileTypes(int tileTypeCount)
+        private int PickSpawnType(BoardState board, int x, int y)
         {
-            List<int> types = new(tileTypeCount);
-            for (int i = 0; i < tileTypeCount; i++)
+            int specialType = RollSpecialTypeId();
+            if (specialType >= 0 && !WouldCreateImmediateMatch(board, x, y, specialType))
+            {
+                return specialType;
+            }
+
+            return PickSafeColorType(board, x, y);
+        }
+
+        private int RollSpecialTypeId()
+        {
+            if (Random.value < _config.SkullSpawnChance)
+            {
+                return _tileRegistry.SkullTypeId;
+            }
+
+            if (Random.value < _config.BombJokerSpawnChance)
+            {
+                return _tileRegistry.BombTypeId;
+            }
+
+            if (Random.value < _config.JokerSpawnChance)
+            {
+                return _tileRegistry.JokerTypeId;
+            }
+
+            return -1;
+        }
+
+        private bool WouldCreateImmediateMatch(BoardState board, int x, int y, int type)
+        {
+            bool wasEmpty = board.GetType(x, y) < 0;
+            int savedId = board.GetId(x, y);
+            int savedType = board.GetType(x, y);
+
+            board.Set(x, y, wasEmpty ? 0 : savedId, type);
+            bool createsMatch = TileMatching.CreatesMatchAt(board, _tileRegistry, x, y);
+
+            if (wasEmpty)
+            {
+                board.Clear(x, y);
+            }
+            else
+            {
+                board.Set(x, y, savedId, savedType);
+            }
+
+            return createsMatch;
+        }
+
+        private int PickSafeColorType(BoardState board, int x, int y)
+        {
+            _noMatchTypesScratch.Clear();
+            for (int i = 0; i < _colorTypeIds.Count; i++)
+            {
+                _noMatchTypesScratch.Add(_colorTypeIds[i]);
+            }
+
+            if (x > 1 &&
+                board.GetType(x - 1, y) == board.GetType(x - 2, y))
+            {
+                _noMatchTypesScratch.Remove(board.GetType(x - 1, y));
+            }
+
+            if (y > 1 &&
+                board.GetType(x, y - 1) == board.GetType(x, y - 2))
+            {
+                _noMatchTypesScratch.Remove(board.GetType(x, y - 1));
+            }
+
+            if (_noMatchTypesScratch.Count == 0)
+            {
+                return _colorTypeIds[Random.Range(0, _colorTypeIds.Count)];
+            }
+
+            for (int attempt = 0; attempt < _noMatchTypesScratch.Count; attempt++)
+            {
+                int candidate = _noMatchTypesScratch[Random.Range(0, _noMatchTypesScratch.Count)];
+                if (!WouldCreateImmediateMatch(board, x, y, candidate))
+                {
+                    return candidate;
+                }
+
+                _noMatchTypesScratch.Remove(candidate);
+            }
+
+            return _colorTypeIds[Random.Range(0, _colorTypeIds.Count)];
+        }
+
+        private static List<int> BuildColorTypeIds(int colorTypeCount)
+        {
+            List<int> types = new(colorTypeCount);
+            for (int i = 0; i < colorTypeCount; i++)
             {
                 types.Add(i);
             }
@@ -309,10 +419,10 @@ namespace Gazeus.DesafioMatch3.Gameplay
             _clearedColumnsScratch = new List<int>();
             _movedTilesList = new List<MovedTileInfo>(width * height);
             _addedTilesList = new List<AddedTileInfo>(width * height);
-            _noMatchTypesScratch = new List<int>(_tilesTypes?.Count ?? 4);
+            _noMatchTypesScratch = new List<int>(_colorTypeIds?.Count ?? 4);
         }
 
-        private static bool HasImmediateMatches(BoardState board)
+        private bool HasImmediateMatches(BoardState board)
         {
             bool[] flags = new bool[board.Width * board.Height];
             List<int> rows = new();
@@ -320,44 +430,24 @@ namespace Gazeus.DesafioMatch3.Gameplay
             return FindMatches(board, flags, rows, columns);
         }
 
-        private static bool CreatesMatchAt(BoardState board, int x, int y)
+        private bool FindMatches(
+            BoardState board,
+            bool[] matchedFlags,
+            List<int> clearedRows,
+            List<int> clearedColumns)
         {
-            int type = board.GetType(x, y);
-            if (type < 0)
+            if (!TileMatching.FindAndMarkMatches(board, _tileRegistry, matchedFlags, clearedRows, clearedColumns))
             {
                 return false;
             }
 
-            int horizontal = CountRun(board, x, y, 1, 0);
-            if (horizontal >= 3)
-            {
-                return true;
-            }
-
-            int vertical = CountRun(board, x, y, 0, 1);
-            return vertical >= 3;
-        }
-
-        private static int CountRun(BoardState board, int x, int y, int dx, int dy)
-        {
-            int type = board.GetType(x, y);
-            int count = 1;
-
-            for (int i = x - dx, j = y - dy;
-                 i >= 0 && j >= 0 && i < board.Width && j < board.Height && board.GetType(i, j) == type;
-                 i -= dx, j -= dy)
-            {
-                count++;
-            }
-
-            for (int i = x + dx, j = y + dy;
-                 i >= 0 && j >= 0 && i < board.Width && j < board.Height && board.GetType(i, j) == type;
-                 i += dx, j += dy)
-            {
-                count++;
-            }
-
-            return count;
+            TileMatching.PropagateBombClears(
+                board,
+                _tileRegistry,
+                matchedFlags,
+                clearedRows,
+                clearedColumns);
+            return true;
         }
 
         private void ApplyColumnGravity(BoardState board)
@@ -409,7 +499,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
             }
         }
 
-        private void CreateBoard(BoardState board, List<int> tileTypes)
+        private void CreateBoard(BoardState board)
         {
             _tileCount = 0;
 
@@ -417,181 +507,10 @@ namespace Gazeus.DesafioMatch3.Gameplay
             {
                 for (int x = 0; x < board.Width; x++)
                 {
-                    _noMatchTypesScratch.Clear();
-                    for (int i = 0; i < tileTypes.Count; i++)
-                    {
-                        _noMatchTypesScratch.Add(tileTypes[i]);
-                    }
-
-                    if (x > 1 &&
-                        board.GetType(x - 1, y) == board.GetType(x - 2, y))
-                    {
-                        _noMatchTypesScratch.Remove(board.GetType(x - 1, y));
-                    }
-
-                    if (y > 1 &&
-                        board.GetType(x, y - 1) == board.GetType(x, y - 2))
-                    {
-                        _noMatchTypesScratch.Remove(board.GetType(x, y - 1));
-                    }
-
-                    int type = _noMatchTypesScratch[Random.Range(0, _noMatchTypesScratch.Count)];
+                    int type = PickSpawnType(board, x, y);
                     board.Set(x, y, _tileCount++, type);
                 }
             }
-        }
-
-        private static bool FindMatches(
-            BoardState board,
-            bool[] matchedFlags,
-            List<int> clearedRows,
-            List<int> clearedColumns)
-        {
-            int cellCount = board.Width * board.Height;
-            for (int i = 0; i < cellCount; i++)
-            {
-                matchedFlags[i] = false;
-            }
-
-            clearedRows.Clear();
-            clearedColumns.Clear();
-
-            ScanHorizontalRuns(board, matchedFlags, clearedRows);
-            ScanVerticalRuns(board, matchedFlags, clearedColumns);
-
-            ApplyLineClears(board, matchedFlags, clearedRows, clearedColumns);
-
-            for (int i = 0; i < cellCount; i++)
-            {
-                if (matchedFlags[i])
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        private static void ScanHorizontalRuns(BoardState board, bool[] matchedFlags, List<int> clearedRows)
-        {
-            for (int y = 0; y < board.Height; y++)
-            {
-                int x = 0;
-                while (x < board.Width)
-                {
-                    int type = board.GetType(x, y);
-                    if (type < 0)
-                    {
-                        x++;
-                        continue;
-                    }
-
-                    int startX = x;
-                    while (x < board.Width && board.GetType(x, y) == type)
-                    {
-                        x++;
-                    }
-
-                    int length = x - startX;
-                    if (length < 3)
-                    {
-                        continue;
-                    }
-
-                    for (int i = startX; i < x; i++)
-                    {
-                        MarkMatch(board, matchedFlags, i, y);
-                    }
-
-                    if (length >= 4)
-                    {
-                        AddUnique(clearedRows, y);
-                    }
-                }
-            }
-        }
-
-        private static void ScanVerticalRuns(BoardState board, bool[] matchedFlags, List<int> clearedColumns)
-        {
-            for (int x = 0; x < board.Width; x++)
-            {
-                int y = 0;
-                while (y < board.Height)
-                {
-                    int type = board.GetType(x, y);
-                    if (type < 0)
-                    {
-                        y++;
-                        continue;
-                    }
-
-                    int startY = y;
-                    while (y < board.Height && board.GetType(x, y) == type)
-                    {
-                        y++;
-                    }
-
-                    int length = y - startY;
-                    if (length < 3)
-                    {
-                        continue;
-                    }
-
-                    for (int i = startY; i < y; i++)
-                    {
-                        MarkMatch(board, matchedFlags, x, i);
-                    }
-
-                    if (length >= 4)
-                    {
-                        AddUnique(clearedColumns, x);
-                    }
-                }
-            }
-        }
-
-        private static void ApplyLineClears(
-            BoardState board,
-            bool[] matchedFlags,
-            List<int> clearedRows,
-            List<int> clearedColumns)
-        {
-            for (int i = 0; i < clearedRows.Count; i++)
-            {
-                int row = clearedRows[i];
-                for (int x = 0; x < board.Width; x++)
-                {
-                    if (board.GetType(x, row) >= 0)
-                    {
-                        MarkMatch(board, matchedFlags, x, row);
-                    }
-                }
-            }
-
-            for (int i = 0; i < clearedColumns.Count; i++)
-            {
-                int column = clearedColumns[i];
-                for (int y = 0; y < board.Height; y++)
-                {
-                    if (board.GetType(column, y) >= 0)
-                    {
-                        MarkMatch(board, matchedFlags, column, y);
-                    }
-                }
-            }
-        }
-
-        private static void AddUnique(List<int> list, int value)
-        {
-            if (!list.Contains(value))
-            {
-                list.Add(value);
-            }
-        }
-
-        private static void MarkMatch(BoardState board, bool[] matchedFlags, int x, int y)
-        {
-            matchedFlags[board.ToIndex(x, y)] = true;
         }
 
         private int CalculateSequenceScore(BoardSequence sequence, int comboIndex)

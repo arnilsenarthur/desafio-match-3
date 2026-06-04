@@ -49,12 +49,31 @@ namespace Gazeus.DesafioMatch3.UI.Views
 
         public void Configure(GameConfig config)
         {
-            _tilePool = new TileObjectPool(config.TilePrefabRepository.TileTypePrefabList, _poolRoot);
+            _tilePool = new TileObjectPool(config.TileTypeRegistry.GetPrefabLookupTable(), _poolRoot);
         }
 
         private void OnDestroy()
         {
-            _boardContainer.LayoutUpdated -= OnBoardLayoutUpdated;
+            if (_boardContainer != null)
+            {
+                _boardContainer.LayoutUpdated -= OnBoardLayoutUpdated;
+            }
+
+            if (_tiles != null)
+            {
+                for (int i = 0; i < _tiles.Length; i++)
+                {
+                    if (_tiles[i] != null)
+                    {
+                        _tiles[i].transform.DOKill();
+                    }
+                }
+            }
+
+            if (transform != null)
+            {
+                DOTween.Kill(transform, true);
+            }
         }
 
         public bool TryGetSelectedCell(out int x, out int y)

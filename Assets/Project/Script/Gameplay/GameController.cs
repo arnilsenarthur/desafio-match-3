@@ -31,6 +31,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
         private bool _isPaused;
         private bool _isCountdownActive;
         private Coroutine _countdownCoroutine;
+        private Transform _boardTweenRoot;
 
         public GameService GameService => _gameService;
         public bool IsPaused => _isPaused;
@@ -38,19 +39,32 @@ namespace Gazeus.DesafioMatch3.Gameplay
         private void Awake()
         {
             _boardView.Configure(_gameConfig);
+            _boardTweenRoot = _boardView != null ? _boardView.transform : null;
             _gameService = new GameService(_gameConfig);
             _boardView.TileClicked += OnTileClick;
             _hudView.Bind(_gameService.Events);
         }
 
-        private void OnDestroy()
-        {
-            _boardView.TileClicked -= OnTileClick;
-            DOTween.Kill(_boardView.transform, true);
+        private void OnDisable() => Cleanup();
 
+        private void OnDestroy() => Cleanup();
+
+        private void Cleanup()
+        {
             if (_countdownCoroutine != null)
             {
                 StopCoroutine(_countdownCoroutine);
+                _countdownCoroutine = null;
+            }
+
+            if (_boardView != null)
+            {
+                _boardView.TileClicked -= OnTileClick;
+            }
+
+            if (_boardTweenRoot != null)
+            {
+                DOTween.Kill(_boardTweenRoot, true);
             }
         }
 

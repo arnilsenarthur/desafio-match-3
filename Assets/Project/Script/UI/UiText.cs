@@ -5,6 +5,11 @@ namespace Gazeus.DesafioMatch3.UI
         public const string CountdownGo = "GO!";
         public const string StatusBoardReshuffled = "Board reshuffled!";
 
+        public static string SkullTimePenalty(int skullCount, float seconds) =>
+            skullCount == 1
+                ? $"Skull! -{seconds:0.#}s"
+                : $"Skulls! -{seconds:0.#}s";
+
         public const string ConfirmRestartTitle = "Restart Game?";
         public const string ConfirmRestartMessage = "Current progress will be lost.";
         public const string ConfirmRestartButton = "Restart";

@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _boardWidth: 10
   _boardHeight: 10
-  _tilePrefabRepository: {fileID: 11400000, guid: 153eac3747f207a40add49ed6e2dacb9, type: 2}
+  _tileTypeRegistry: {fileID: 11400000, guid: 153eac3747f207a40add49ed6e2dacb9, type: 2}
   _difficulties:
   - _id: easy
     _displayName: easy
@@ -38,3 +38,7 @@ MonoBehaviour:
   _scorePerCellInLineClear: 5
   _cascadeMultiplierStep: 0.5
   _targetScore: 0
+  _jokerSpawnChance: 0.03
+  _bombJokerSpawnChance: 0.02
+  _skullSpawnChance: 0.02
+  _skullTimePenaltySeconds: 5

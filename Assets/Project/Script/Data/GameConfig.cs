@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace Gazeus.DesafioMatch3.Data
 {
@@ -12,8 +13,9 @@ namespace Gazeus.DesafioMatch3.Data
         [SerializeField]
         private int _boardHeight = 10;
 
+        [FormerlySerializedAs("_tilePrefabRepository")]
         [SerializeField]
-        private TilePrefabRepository _tilePrefabRepository;
+        private TileTypeRegistry _tileTypeRegistry;
 
         [Header("Difficulties"), SerializeField]
         private GameDifficultySettings[] _difficulties =
@@ -53,9 +55,25 @@ namespace Gazeus.DesafioMatch3.Data
         [SerializeField]
         private int _targetScore;
 
+        [Header("Special Tiles (spawn chance 0–1, initial board + refills)")]
+        [Range(0f, 1f)]
+        [SerializeField]
+        private float _jokerSpawnChance = 0.03f;
+
+        [Range(0f, 1f)]
+        [SerializeField]
+        private float _bombJokerSpawnChance = 0.02f;
+
+        [Range(0f, 1f)]
+        [SerializeField]
+        private float _skullSpawnChance = 0.02f;
+
+        [SerializeField]
+        private float _skullTimePenaltySeconds = 5f;
+
         public int BoardWidth => _boardWidth;
         public int BoardHeight => _boardHeight;
-        public TilePrefabRepository TilePrefabRepository => _tilePrefabRepository;
+        public TileTypeRegistry TileTypeRegistry => _tileTypeRegistry;
         public GameDifficultySettings[] Difficulties => _difficulties;
         public float TimeBonusPerValidSwap => _timeBonusPerValidSwap;
         public float DelayBeforeCountdown => Mathf.Max(0f, _delayBeforeCountdown);
@@ -68,8 +86,20 @@ namespace Gazeus.DesafioMatch3.Data
         public float CascadeMultiplierStep => _cascadeMultiplierStep;
         public int TargetScore => _targetScore;
 
-        public int MaxTileTypeCount =>
-            _tilePrefabRepository != null ? _tilePrefabRepository.TileTypePrefabList.Length : 0;
+        public int MaxColorTypeCount =>
+            _tileTypeRegistry != null ? _tileTypeRegistry.ColorCount : 0;
+
+        public float JokerSpawnChance => Mathf.Clamp01(_jokerSpawnChance);
+        public float BombJokerSpawnChance => Mathf.Clamp01(_bombJokerSpawnChance);
+        public float SkullSpawnChance => Mathf.Clamp01(_skullSpawnChance);
+        public float SkullTimePenaltySeconds => Mathf.Max(0f, _skullTimePenaltySeconds);
+
+        private void OnValidate()
+        {
+            _jokerSpawnChance = Mathf.Clamp01(_jokerSpawnChance);
+            _bombJokerSpawnChance = Mathf.Clamp01(_bombJokerSpawnChance);
+            _skullSpawnChance = Mathf.Clamp01(_skullSpawnChance);
+        }
 
         public bool TryGetDifficulty(string id, out GameDifficultySettings settings)
         {
