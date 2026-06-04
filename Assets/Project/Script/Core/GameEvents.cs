@@ -15,6 +15,7 @@ namespace Gazeus.DesafioMatch3.Core
         public event Action<SwapCompletedEventArgs> SwapCompleted;
         public event Action<BoardRegeneratedEventArgs> BoardRegenerated;
         public event Action<GameEndedEventArgs> GameEnded;
+        public event Action<CountdownChangedEventArgs> CountdownChanged;
 
         public void RaiseGameStarted(GameStartedEventArgs args) => GameStarted?.Invoke(args);
         public void RaiseScoreChanged(ScoreChangedEventArgs args) => ScoreChanged?.Invoke(args);
@@ -24,6 +25,7 @@ namespace Gazeus.DesafioMatch3.Core
         public void RaiseSwapCompleted(SwapCompletedEventArgs args) => SwapCompleted?.Invoke(args);
         public void RaiseBoardRegenerated(BoardRegeneratedEventArgs args) => BoardRegenerated?.Invoke(args);
         public void RaiseGameEnded(GameEndedEventArgs args) => GameEnded?.Invoke(args);
+        public void RaiseCountdownChanged(CountdownChangedEventArgs args) => CountdownChanged?.Invoke(args);
     }
 
     public readonly struct GameStartedEventArgs
@@ -62,6 +64,22 @@ namespace Gazeus.DesafioMatch3.Core
             TimeRemaining = timeRemaining;
             Delta = delta;
         }
+    }
+
+    public readonly struct CountdownChangedEventArgs
+    {
+        public string DisplayText { get; }
+        public bool IsVisible { get; }
+
+        public CountdownChangedEventArgs(string displayText, bool isVisible)
+        {
+            DisplayText = displayText;
+            IsVisible = isVisible;
+        }
+
+        public static CountdownChangedEventArgs Show(string displayText) => new(displayText, true);
+
+        public static CountdownChangedEventArgs Hidden => new(string.Empty, false);
     }
 
     public readonly struct SwapStartedEventArgs

@@ -9,6 +9,7 @@ namespace Gazeus.DesafioMatch3.Views
         [SerializeField] private TMP_Text _scoreText;
         [SerializeField] private TMP_Text _timeText;
         [SerializeField] private TMP_Text _statusText;
+        [SerializeField] private TMP_Text _countdownText;
 
         private GameEvents _events;
 
@@ -21,6 +22,7 @@ namespace Gazeus.DesafioMatch3.Views
             _events.GameStarted += OnGameStarted;
             _events.GameEnded += OnGameEnded;
             _events.BoardRegenerated += OnBoardRegenerated;
+            _events.CountdownChanged += OnCountdownChanged;
         }
 
         private void OnDestroy()
@@ -40,6 +42,7 @@ namespace Gazeus.DesafioMatch3.Views
             _events.GameStarted -= OnGameStarted;
             _events.GameEnded -= OnGameEnded;
             _events.BoardRegenerated -= OnBoardRegenerated;
+            _events.CountdownChanged -= OnCountdownChanged;
             _events = null;
         }
 
@@ -59,6 +62,16 @@ namespace Gazeus.DesafioMatch3.Views
             int minutes = totalSeconds / 60;
             int seconds = totalSeconds % 60;
             _timeText.text = $"Time: {minutes:00}:{seconds:00}";
+        }
+
+        private void OnCountdownChanged(CountdownChangedEventArgs args)
+        {
+            if (_countdownText == null)
+            {
+                return;
+            }
+
+            _countdownText.text = args.IsVisible ? args.DisplayText : string.Empty;
         }
 
         private void OnBoardRegenerated(BoardRegeneratedEventArgs args)

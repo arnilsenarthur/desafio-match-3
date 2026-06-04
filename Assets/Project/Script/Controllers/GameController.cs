@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using DG.Tweening;
 using Gazeus.DesafioMatch3.Core;
@@ -22,6 +23,11 @@ namespace Gazeus.DesafioMatch3.Controllers
         private GameService _gameService;
         private bool _isAnimating;
         private bool _isPaused;
+        private bool _isCountdownActive;
+        private Coroutine _countdownCoroutine;
+
+        private const int CountdownSeconds = 3;
+        private const float GoDisplayDuration = 0.5f;
 
         public GameService GameService => _gameService;
         public bool IsPaused => _isPaused;
@@ -50,6 +56,23 @@ namespace Gazeus.DesafioMatch3.Controllers
 
             BoardState board = _gameService.Start(difficultyId);
             _boardView.CreateBoard(board);
+            BeginCountdown();
+        }
+
+        public void RestartCurrentGame()
+        {
+            if (GameRunContext.HasSelectedDifficulty)
+            {
+                RestartGame(GameRunContext.SelectedDifficultyId);
+                return;
+            }
+
+#if UNITY_EDITOR
+            if (_gameConfig.TryGetDifficulty(_fallbackDifficultyId, out _))
+            {
+                RestartGame(_fallbackDifficultyId);
+            }
+#endif
         }
 
         private string ResolveDifficultyId()
@@ -95,18 +118,65 @@ namespace Gazeus.DesafioMatch3.Controllers
             _boardView.ClearBoard();
             BoardState board = _gameService.Start(difficultyId);
             _boardView.CreateBoard(board);
+            BeginCountdown();
             RefreshInteractionState();
+        }
+
+        private void BeginCountdown()
+        {
+            if (_countdownCoroutine != null)
+            {
+                StopCoroutine(_countdownCoroutine);
+            }
+
+            _countdownCoroutine = StartCoroutine(RunCountdown());
+        }
+
+        private IEnumerator RunCountdown()
+        {
+            _isCountdownActive = true;
+            RefreshInteractionState();
+
+            for (int seconds = CountdownSeconds; seconds >= 1; seconds--)
+            {
+                _gameService.Events.RaiseCountdownChanged(CountdownChangedEventArgs.Show(seconds.ToString()));
+                //yield return new WaitForSeconds(1f);
+                yield return WaitForUnpausedSeconds(1f);
+            }
+
+            _gameService.Events.RaiseCountdownChanged(CountdownChangedEventArgs.Show("GO!"));
+            yield return WaitForUnpausedSeconds(GoDisplayDuration);
+            _gameService.Events.RaiseCountdownChanged(CountdownChangedEventArgs.Hidden);
+
+            _isCountdownActive = false;
+            _countdownCoroutine = null;
+            RefreshInteractionState();
+        }
+
+        private IEnumerator WaitForUnpausedSeconds(float duration)
+        {
+            float elapsed = 0f;
+
+            while (elapsed < duration)
+            {
+                if (!_isPaused)
+                {
+                    elapsed += Time.deltaTime;
+                }
+
+                yield return null;
+            }
         }
 
         private void Update()
         {
-            _gameService.TimerPaused = _isAnimating || _isPaused;
+            _gameService.TimerPaused = _isAnimating || _isPaused || _isCountdownActive;
             _gameService.Tick(Time.deltaTime);
         }
 
         private void RefreshInteractionState()
         {
-            bool canInteract = !_isPaused && !_isAnimating && !_gameService.IsGameOver;
+            bool canInteract = !_isPaused && !_isAnimating && !_isCountdownActive && !_gameService.IsGameOver;
             _boardView.SetInteractionEnabled(canInteract);
         }
 
@@ -126,7 +196,7 @@ namespace Gazeus.DesafioMatch3.Controllers
 
         private void OnTileClick(int x, int y)
         {
-            if (_isPaused || _isAnimating || _gameService.IsGameOver)
+            if (_isPaused || _isAnimating || _isCountdownActive || _gameService.IsGameOver)
             {
                 return;
             }
