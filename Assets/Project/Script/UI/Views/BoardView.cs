@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using DG.Tweening;
 using Gazeus.DesafioMatch3.Data;
@@ -6,10 +7,10 @@ using Gazeus.DesafioMatch3.Gameplay;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
-using Gazeus.DesafioMatch3;
 
 namespace Gazeus.DesafioMatch3.UI.Views
 {
+    [DefaultExecutionOrder(-200)]
     public class BoardView : MonoBehaviour, IPointerClickHandler, IPointerMoveHandler, IPointerExitHandler
     {
         public event Action<Vector2Int> TileClicked;
@@ -21,6 +22,9 @@ namespace Gazeus.DesafioMatch3.UI.Views
         private const float ClickPunchScale = 0.92f;
         private const float ScaleTweenDuration = 0.12f;
         private const float ClickPunchDuration = 0.08f;
+        private const string TilePoolObjectName = "TilePool";
+
+        private readonly BoardViewAnimations _animations = new();
 
         [SerializeField]
         private TileSpotView _tileSpotPrefab;
@@ -36,65 +40,108 @@ namespace Gazeus.DesafioMatch3.UI.Views
         private TileObjectPool _tilePool;
         private Transform _poolRoot;
         private RectTransform _boardRect;
-        private GameEvents _gameEvents;
+        private bool _tutorialEventsBound;
         private int _hoverIndex = -1;
         private int _selectedIndex = -1;
         private bool _interactionEnabled = true;
         private bool _tutorialGuideActive;
         private Vector2Int _tutorialSelectCell = BoardCell.Invalid;
         private Vector2Int _tutorialSwapTargetCell = BoardCell.Invalid;
+        private Coroutine _tutorialLayoutCoroutine;
+        private bool _layoutEventsSubscribed;
 
         public bool HasSelection => _selectedIndex >= 0;
 
-        private void Awake()
+        public bool IsReady => _boardContainer != null && _tilePool != null && _tileSpotPrefab != null;
+
+        private void OnEnable() => EnsureInitialized();
+
+        public bool Configure(GameConfig config)
         {
-            _boardRect = (RectTransform)transform;
-            _boardContainer = GetComponent<FlexibleGridLayout>();
-            _boardContainer.LayoutUpdated += OnBoardLayoutUpdated;
+            EnsureInitialized();
 
-            GameObject poolObject = new GameObject("TilePool");
-            poolObject.transform.SetParent(transform, false);
-            _poolRoot = poolObject.transform;
-            SetIgnoreLayout(poolObject);
-
-            if (_tutorialHints == null)
+            if (_boardContainer == null)
             {
-                _tutorialHints = GetComponentInChildren<TutorialBoardHintsView>(true);
+                Debug.LogError("BoardView requires FlexibleGridLayout on the same GameObject.", this);
+                return false;
             }
 
-            EnsureTutorialHintsSetup();
-            _tutorialHints?.Hide();
+            if (_tileSpotPrefab == null)
+            {
+                Debug.LogError("BoardView is missing Tile Spot Prefab.", this);
+                return false;
+            }
+
+            Transform poolRoot = GetOrCreatePoolRoot();
+            if (poolRoot == null)
+            {
+                Debug.LogError("BoardView could not create the tile pool root.", this);
+                return false;
+            }
+
+            TileTypeRegistry registry = config?.TileTypeRegistry;
+            if (registry == null || !registry.IsConfigured)
+            {
+                Debug.LogError("GameConfig Tile Type Registry is missing or not configured.", this);
+                return false;
+            }
+
+            GameObject[] prefabLookup = registry.GetPrefabLookupTable();
+            if (prefabLookup == null || prefabLookup.Length == 0)
+            {
+                Debug.LogError("Tile Type Registry prefab lookup table is empty.", this);
+                return false;
+            }
+
+            _tilePool = new TileObjectPool(prefabLookup, poolRoot);
+
+            if (!_tutorialEventsBound)
+            {
+                GameService.TutorialGuideChanged += OnTutorialGuideChanged;
+                _tutorialEventsBound = true;
+            }
+
+            return true;
         }
 
-        public void Configure(GameConfig config, GameEvents gameEvents = null)
-        {
-            _tilePool = new TileObjectPool(config.TileTypeRegistry.GetPrefabLookupTable(), _poolRoot);
-
-            if (_gameEvents != null)
-            {
-                _gameEvents.TutorialGuideChanged -= OnTutorialGuideChanged;
-            }
-
-            _gameEvents = gameEvents;
-
-            if (_gameEvents != null)
-            {
-                _gameEvents.TutorialGuideChanged += OnTutorialGuideChanged;
-            }
-        }
+        private void OnDisable() => CancelRunningAnimations();
 
         private void OnDestroy()
         {
-            if (_gameEvents != null)
+            CancelRunningAnimations();
+
+            if (_tutorialEventsBound)
             {
-                _gameEvents.TutorialGuideChanged -= OnTutorialGuideChanged;
+                GameService.TutorialGuideChanged -= OnTutorialGuideChanged;
+                _tutorialEventsBound = false;
             }
 
-            if (_boardContainer != null)
+            if (_boardContainer != null && _layoutEventsSubscribed)
             {
                 _boardContainer.LayoutUpdated -= OnBoardLayoutUpdated;
+                _layoutEventsSubscribed = false;
+            }
+        }
+
+        public void CancelRunningAnimations()
+        {
+            StopTutorialLayoutCoroutine();
+            KillBoardTweens();
+        }
+
+        private void StopTutorialLayoutCoroutine()
+        {
+            if (_tutorialLayoutCoroutine == null)
+            {
+                return;
             }
 
+            StopCoroutine(_tutorialLayoutCoroutine);
+            _tutorialLayoutCoroutine = null;
+        }
+
+        private void KillBoardTweens()
+        {
             if (_tiles != null)
             {
                 for (int i = 0; i < _tiles.Length; i++)
@@ -123,8 +170,6 @@ namespace Gazeus.DesafioMatch3.UI.Views
             cell = IndexToCell(_selectedIndex);
             return true;
         }
-
-        public bool IsSelectedCell(Vector2Int cell) => _selectedIndex == ToIndex(cell);
 
         public void SelectCell(Vector2Int cell)
         {
@@ -193,6 +238,14 @@ namespace Gazeus.DesafioMatch3.UI.Views
 
         public void CreateBoard(BoardState board)
         {
+            EnsureInitialized();
+
+            if (!IsReady)
+            {
+                Debug.LogError("BoardView is not ready to create a board. Call Configure first.", this);
+                return;
+            }
+
             _width = board.Width;
             _height = board.Height;
             _boardContainer.Rows = _height;
@@ -220,6 +273,8 @@ namespace Gazeus.DesafioMatch3.UI.Views
                     }
                 }
             }
+
+            _animations.Bind(_tiles, _tileSpots, _tilePool, _width, gameObject, GetTargetScaleForIndex);
         }
 
         public void ClearBoard()
@@ -253,6 +308,7 @@ namespace Gazeus.DesafioMatch3.UI.Views
             _tileSpots = null;
             _width = 0;
             _height = 0;
+            _animations.ClearBindings();
         }
 
         public void SetInteractionEnabled(bool enabled)
@@ -328,17 +384,80 @@ namespace Gazeus.DesafioMatch3.UI.Views
                 return;
             }
 
-            StartCoroutine(ShowTutorialHintsAfterLayout(selectCell, swapTargetCell));
+            StopTutorialLayoutCoroutine();
+            _tutorialLayoutCoroutine = StartCoroutine(ShowTutorialHintsAfterLayout(selectCell, swapTargetCell));
         }
 
-        private System.Collections.IEnumerator ShowTutorialHintsAfterLayout(
-            Vector2Int selectCell,
-            Vector2Int swapTargetCell)
+        private IEnumerator ShowTutorialHintsAfterLayout(Vector2Int selectCell, Vector2Int swapTargetCell)
         {
             yield return null;
+
+            if (!this)
+            {
+                yield break;
+            }
+
             Canvas.ForceUpdateCanvases();
             LayoutRebuilder.ForceRebuildLayoutImmediate(_boardRect);
             _tutorialHints?.ShowSwapHint(selectCell, swapTargetCell);
+            _tutorialLayoutCoroutine = null;
+        }
+
+        private void EnsureInitialized()
+        {
+            if (_boardRect == null)
+            {
+                _boardRect = (RectTransform)transform;
+            }
+
+            if (_boardContainer == null)
+            {
+                _boardContainer = GetComponent<FlexibleGridLayout>();
+            }
+
+            if (_boardContainer != null && !_layoutEventsSubscribed)
+            {
+                _boardContainer.LayoutUpdated += OnBoardLayoutUpdated;
+                _layoutEventsSubscribed = true;
+            }
+
+            GetOrCreatePoolRoot();
+
+            if (_tutorialHints == null)
+            {
+                _tutorialHints = GetComponentInChildren<TutorialBoardHintsView>(true);
+            }
+
+            EnsureTutorialHintsSetup();
+            _tutorialHints?.Hide();
+        }
+
+        private Transform GetOrCreatePoolRoot()
+        {
+            if (_poolRoot != null)
+            {
+                return _poolRoot;
+            }
+
+            const string poolName = TilePoolObjectName;
+            Transform existing = transform.Find(poolName);
+            if (existing != null)
+            {
+                _poolRoot = existing;
+                return _poolRoot;
+            }
+
+            if (!this)
+            {
+                return null;
+            }
+
+            GameObject poolObject = new GameObject(poolName);
+            poolObject.transform.SetParent(transform, false);
+            poolObject.transform.localPosition = Vector3.zero;
+            SetIgnoreLayout(poolObject);
+            _poolRoot = poolObject.transform;
+            return _poolRoot;
         }
 
         private void EnsureTutorialHintsSetup()
@@ -385,6 +504,11 @@ namespace Gazeus.DesafioMatch3.UI.Views
 
         public bool CanSelectTutorialCell(Vector2Int cell)
         {
+            if (!_interactionEnabled)
+            {
+                return false;
+            }
+
             if (!_tutorialGuideActive)
             {
                 return true;
@@ -502,84 +626,14 @@ namespace Gazeus.DesafioMatch3.UI.Views
             TileClicked?.Invoke(cell);
         }
 
-        public Tween CreateTile(List<AddedTileInfo> addedTiles)
-        {
-            Sequence sequence = DOTween.Sequence();
-            foreach (var addedTileInfo in addedTiles)
-            {
-                Vector2Int position = addedTileInfo.Position;
-                int index = ToIndex(position.x, position.y);
+        public Tween CreateTile(List<AddedTileInfo> addedTiles) => _animations.CreateTile(addedTiles);
 
-                GameObject tile = _tilePool.Get(addedTileInfo.Type);
-                _tileSpots[index].SetTile(tile);
-                _tiles[index] = tile;
+        public Tween DestroyTiles(List<Vector2Int> matchedPosition) =>
+            _animations.DestroyTiles(matchedPosition);
 
-                tile.transform.localScale = Vector3.zero;
-                sequence.Join(tile.transform.DOScale(GetTargetScaleForIndex(index), 0.2f));
-            }
+        public Tween MoveTiles(List<MovedTileInfo> movedTiles) => _animations.MoveTiles(movedTiles);
 
-            return sequence;
-        }
-
-        public Tween DestroyTiles(List<Vector2Int> matchedPosition)
-        {
-            Sequence sequence = DOTween.Sequence();
-            foreach (var position in matchedPosition)
-            {
-                int index = ToIndex(position.x, position.y);
-                GameObject tile = _tiles[index];
-                _tiles[index] = null;
-
-                if (tile == null)
-                {
-                    continue;
-                }
-
-                sequence.Join(tile.transform.DOScale(0f, 0.2f).OnComplete(() => _tilePool.Release(tile)));
-            }
-
-            if (matchedPosition.Count == 0)
-            {
-                sequence.AppendInterval(0.01f);
-            }
-
-            return sequence;
-        }
-
-        public Tween MoveTiles(List<MovedTileInfo> movedTiles)
-        {
-            Sequence sequence = DOTween.Sequence();
-            foreach (var movedTileInfo in movedTiles)
-            {
-                Vector2Int from = movedTileInfo.From;
-                Vector2Int to = movedTileInfo.To;
-
-                int fromIndex = ToIndex(from.x, from.y);
-                int toIndex = ToIndex(to.x, to.y);
-
-                GameObject tile = _tiles[fromIndex];
-                sequence.Join(_tileSpots[toIndex].AnimatedSetTile(tile));
-
-                _tiles[toIndex] = tile;
-                _tiles[fromIndex] = null;
-            }
-
-            return sequence;
-        }
-
-        public Tween SwapTiles(Vector2Int from, Vector2Int to)
-        {
-            int fromIndex = ToIndex(from);
-            int toIndex = ToIndex(to);
-
-            Sequence sequence = DOTween.Sequence();
-            sequence.Append(_tileSpots[fromIndex].AnimatedSetTile(_tiles[toIndex]));
-            sequence.Join(_tileSpots[toIndex].AnimatedSetTile(_tiles[fromIndex]));
-
-            (_tiles[toIndex], _tiles[fromIndex]) = (_tiles[fromIndex], _tiles[toIndex]);
-
-            return sequence;
-        }
+        public Tween SwapTiles(Vector2Int from, Vector2Int to) => _animations.SwapTiles(from, to);
 
         private void OnBoardLayoutUpdated()
         {

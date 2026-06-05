@@ -1,6 +1,7 @@
 using System.Collections;
 using Gazeus.DesafioMatch3.App;
 using Gazeus.DesafioMatch3.Data;
+using Gazeus.DesafioMatch3.Localization;
 using Gazeus.DesafioMatch3.UI.Views;
 using TMPro;
 using UnityEngine;
@@ -19,6 +20,9 @@ namespace Gazeus.DesafioMatch3.UI.Controllers
         private UiPanelView _difficultyPanel;
 
         [SerializeField]
+        private SettingsPanelController _settingsPanel;
+
+        [SerializeField]
         private TMP_Text _highScoreDifficultyLabel;
 
         [SerializeField]
@@ -32,7 +36,13 @@ namespace Gazeus.DesafioMatch3.UI.Controllers
 
         private void Start() => ShowMainMenu();
 
-        private void OnDisable() => StopHighScoreCycle();
+        private void OnEnable() => LocalizationService.LanguageChanged += OnLanguageChanged;
+
+        private void OnDisable()
+        {
+            LocalizationService.LanguageChanged -= OnLanguageChanged;
+            StopHighScoreCycle();
+        }
 
         public void ShowMainMenu()
         {
@@ -61,6 +71,21 @@ namespace Gazeus.DesafioMatch3.UI.Controllers
 #else
             Application.Quit();
 #endif
+        }
+
+        public void ShowSettings() => _settingsPanel?.Show();
+
+        private void OnLanguageChanged()
+        {
+            if (!this)
+            {
+                return;
+            }
+
+            if (CanCycleHighScores())
+            {
+                ShowHighScoreEntry(_highScoreCycleIndex);
+            }
         }
 
         private void StartHighScoreCycle()
@@ -96,6 +121,12 @@ namespace Gazeus.DesafioMatch3.UI.Controllers
             while (true)
             {
                 yield return wait;
+
+                if (!this || !isActiveAndEnabled || !CanCycleHighScores())
+                {
+                    yield break;
+                }
+
                 _highScoreCycleIndex = (_highScoreCycleIndex + 1) % _gameConfig.Difficulties.Length;
                 ShowHighScoreEntry(_highScoreCycleIndex);
             }
@@ -110,7 +141,7 @@ namespace Gazeus.DesafioMatch3.UI.Controllers
         private void ShowHighScoreEntry(int index)
         {
             GameDifficultySettings difficulty = _gameConfig.Difficulties[index];
-            _highScoreDifficultyLabel.text = difficulty.DisplayName;
+            _highScoreDifficultyLabel.text = LocalizationService.LocalizeDifficulty(difficulty.Id);
             _highScoreValueLabel.text = HighScoreStorage.Get(difficulty.Id).ToString();
         }
 

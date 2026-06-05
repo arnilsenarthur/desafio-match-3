@@ -2,7 +2,6 @@ using DG.Tweening;
 using Gazeus.DesafioMatch3.Gameplay;
 using TMPro;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 namespace Gazeus.DesafioMatch3.UI.Views
 {
@@ -15,15 +14,6 @@ namespace Gazeus.DesafioMatch3.UI.Views
         [SerializeField]
         private TMP_Text _hintArrow;
 
-        [FormerlySerializedAs("_selectArrow")]
-        [SerializeField]
-        private TMP_Text _legacySelectArrow;
-
-        [FormerlySerializedAs("_targetArrow")]
-        [FormerlySerializedAs("_swapTargetArrow")]
-        [SerializeField]
-        private TMP_Text _legacySwapTargetArrow;
-
         private BoardView _boardView;
         private RectTransform _overlayRect;
         private Sequence _pulseSequence;
@@ -32,7 +22,7 @@ namespace Gazeus.DesafioMatch3.UI.Views
         private Vector2Int _swapTargetCell = BoardCell.Invalid;
         private bool _showingSwapTarget;
 
-        private void Awake() => ResolveHintArrow();
+        private void OnDisable() => StopAllHintAnimations();
 
         private void OnDestroy() => StopAllHintAnimations();
 
@@ -134,6 +124,11 @@ namespace Gazeus.DesafioMatch3.UI.Views
                 .SetTarget(hintRect)
                 .OnComplete(() =>
                 {
+                    if (!this)
+                    {
+                        return;
+                    }
+
                     _moveTween = null;
                     StartPulse();
                 });
@@ -176,28 +171,8 @@ namespace Gazeus.DesafioMatch3.UI.Views
             _hintArrow.alignment = TextAlignmentOptions.Center;
         }
 
-        private void ResolveHintArrow()
-        {
-            if (_hintArrow == null)
-            {
-                _hintArrow = _legacySelectArrow;
-            }
-
-            if (_legacySwapTargetArrow != null)
-            {
-                _legacySwapTargetArrow.gameObject.SetActive(false);
-            }
-
-            if (_legacySelectArrow != null && _legacySelectArrow != _hintArrow)
-            {
-                _legacySelectArrow.gameObject.SetActive(false);
-            }
-        }
-
         private void EnsureInitialized()
         {
-            ResolveHintArrow();
-
             if (_overlayRect == null)
             {
                 _overlayRect = transform as RectTransform;

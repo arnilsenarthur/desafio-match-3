@@ -14,7 +14,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
 
             for (int i = 0; i < _cells.Length; i++)
             {
-                _cells[i] = new Tile { Id = -1, Type = -1 };
+                _cells[i] = new Tile(-1, -1);
             }
         }
 
@@ -37,9 +37,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
 
         public void Set(int x, int y, int id, int type)
         {
-            int index = ToIndex(x, y);
-            _cells[index].Id = id;
-            _cells[index].Type = type;
+            _cells[ToIndex(x, y)] = new Tile(id, type);
         }
 
         public void Clear(Vector2Int cell) => Clear(cell.x, cell.y);

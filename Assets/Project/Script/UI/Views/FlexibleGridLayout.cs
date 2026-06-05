@@ -2,7 +2,7 @@ using System;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace Gazeus.DesafioMatch3
+namespace Gazeus.DesafioMatch3.UI.Views
 {
     public class FlexibleGridLayout : LayoutGroup
     {

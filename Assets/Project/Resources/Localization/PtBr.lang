@@ -1,0 +1,75 @@
+# Portuguese (Brazil)
+
+main_menu.title=Match 3
+main_menu.play=Jogar
+main_menu.quit=Sair
+main_menu.choose_difficulty=Escolha a dificuldade
+main_menu.back=Voltar
+main_menu.settings=Configuracoes
+
+difficulty.easy=Facil
+difficulty.normal=Normal
+difficulty.hard=Dificil
+
+common.cancel=Cancelar
+
+pause.title=Pausado
+pause.resume=Continuar
+pause.main_menu=Menu principal
+pause.settings=Configuracoes
+
+settings.title=Configuracoes
+settings.language=Idioma
+settings.vfx_volume=Volume dos efeitos
+settings.music_volume=Volume da musica
+settings.animation_speed=Velocidade das animacoes
+settings.play_tutorial_next_time=Mostrar tutorial na proxima partida
+settings.close=Fechar
+
+game_over.panel_title=Fim de jogo
+game_over.retry=Tentar de novo
+
+tutorial.continue=Iniciar tutorial
+tutorial.skip=Pular tutorial
+
+countdown.go=VAI!
+
+status.board_reshuffled=Tabuleiro embaralhado!
+status.skull_penalty=Caveira! -{0:0.#}s
+status.skulls_penalty=Caveiras! -{0:0.#}s
+
+confirm.restart.title=Reiniciar jogo?
+confirm.restart.message=O progresso atual sera perdido.
+confirm.restart.button=Reiniciar
+
+confirm.main_menu.title=Sair do jogo?
+confirm.main_menu.message=Voltar ao menu principal? O progresso atual sera perdido.
+confirm.main_menu.button=Menu principal
+
+game_over.goal_reached=Meta alcancada!
+game_over.time_up=Tempo esgotado!
+game_over.default=Fim de jogo
+game_over.new_high_score=\nNovo recorde!
+game_over.message={0}\nPontos: {1}\nRecorde: {2}{3}
+
+hud.score_line=Pontos: {0}  Recorde: {1}
+hud.time_line=Tempo: {0:00}:{1:00}
+
+tutorial.intro.title=Como jogar
+tutorial.intro.body=Aprenda combinacoes, combos e pecas especiais em um tabuleiro de pratica.\nDepois voce comeca uma partida real com o cronometro.
+tutorial.step_counter=Passo {0} de {1}
+
+tutorial.step.match3.title=Combine 3
+tutorial.step.match3.instruction=Toque na peca 1, depois na peca 2 para trocar. Faca uma linha de 3 cores iguais.
+
+tutorial.step.match4.title=Combine 4+
+tutorial.step.match4.instruction=Toque na peca 1, depois na peca 2. Linhas maiores valem mais pontos.
+
+tutorial.step.joker.title=Curinga
+tutorial.step.joker.instruction=Toque na peca 1, depois na peca 2. O curinga conta como qualquer cor ja presente na linha.
+
+tutorial.step.bomb.title=Bomba
+tutorial.step.bomb.instruction=Ao combinar, a bomba limpa a linha e a coluna inteiras. Encadeie com outras bombas.
+
+tutorial.step.skull.title=Caveira
+tutorial.step.skull.instruction=Eliminar caveiras remove tempo do relogio. Evite-as quando puder!

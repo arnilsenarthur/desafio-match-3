@@ -1,4 +1,5 @@
 ﻿using DG.Tweening;
+using Gazeus.DesafioMatch3.App;
 using UnityEngine;
 
 namespace Gazeus.DesafioMatch3.UI.Views
@@ -19,7 +20,9 @@ namespace Gazeus.DesafioMatch3.UI.Views
                 () => tileRect.anchoredPosition,
                 value => tileRect.anchoredPosition = value,
                 Vector2.zero,
-                MoveDuration).SetTarget(tileRect);
+                SettingsService.ScaleDuration(MoveDuration))
+                .SetTarget(tileRect)
+                .SetLink(gameObject, LinkBehaviour.KillOnDestroy);
         }
 
         public void SetTile(GameObject tile)

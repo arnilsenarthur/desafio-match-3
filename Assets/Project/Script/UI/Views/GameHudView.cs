@@ -1,6 +1,6 @@
 using Gazeus.DesafioMatch3.App;
 using Gazeus.DesafioMatch3.Gameplay;
-using Gazeus.DesafioMatch3.UI;
+using Gazeus.DesafioMatch3.Localization;
 using TMPro;
 using UnityEngine;
 
@@ -20,67 +20,97 @@ namespace Gazeus.DesafioMatch3.UI.Views
         [SerializeField]
         private TMP_Text _countdownText;
 
-        private GameEvents _events;
+        private bool _bound;
         private string _difficultyId;
-        private int _storedBest;
+        private int _displayedScore;
         private int _displayedTimeSeconds = -1;
+        private string _statusKey;
+        private object[] _statusArgs = System.Array.Empty<object>();
 
-        public void Bind(GameEvents events)
+        public void Bind()
         {
             Unbind();
-            _events = events;
-            _events.ScoreChanged += OnScoreChanged;
-            _events.TimeChanged += OnTimeChanged;
-            _events.GameStarted += OnGameStarted;
-            _events.GameEnded += OnGameEnded;
-            _events.BoardRegenerated += OnBoardRegenerated;
-            _events.CountdownChanged += OnCountdownChanged;
-            _events.CascadeStep += OnCascadeStep;
-        }
 
-        private void OnDestroy() => Unbind();
-
-        private void Unbind()
-        {
-            if (_events == null)
+            if (!GameService.IsActive)
             {
                 return;
             }
 
-            _events.ScoreChanged -= OnScoreChanged;
-            _events.TimeChanged -= OnTimeChanged;
-            _events.GameStarted -= OnGameStarted;
-            _events.GameEnded -= OnGameEnded;
-            _events.BoardRegenerated -= OnBoardRegenerated;
-            _events.CountdownChanged -= OnCountdownChanged;
-            _events.CascadeStep -= OnCascadeStep;
-            _events = null;
+            GameService.ScoreChanged += OnScoreChanged;
+            GameService.TimeChanged += OnTimeChanged;
+            GameService.GameStarted += OnGameStarted;
+            GameService.GameEnded += OnGameEnded;
+            GameService.BoardRegenerated += OnBoardRegenerated;
+            GameService.CountdownChanged += OnCountdownChanged;
+            GameService.CascadeStep += OnCascadeStep;
+            _bound = true;
+        }
+
+        private void OnEnable() => LocalizationService.LanguageChanged += OnLanguageChanged;
+
+        private void OnDisable()
+        {
+            LocalizationService.LanguageChanged -= OnLanguageChanged;
+            Unbind();
+        }
+
+        private void OnDestroy() => Unbind();
+
+        public void Unbind()
+        {
+            if (!_bound)
+            {
+                return;
+            }
+
+            GameService.ScoreChanged -= OnScoreChanged;
+            GameService.TimeChanged -= OnTimeChanged;
+            GameService.GameStarted -= OnGameStarted;
+            GameService.GameEnded -= OnGameEnded;
+            GameService.BoardRegenerated -= OnBoardRegenerated;
+            GameService.CountdownChanged -= OnCountdownChanged;
+            GameService.CascadeStep -= OnCascadeStep;
+            _bound = false;
         }
 
         private void OnGameStarted(GameStartedEventArgs args)
         {
             _difficultyId = args.DifficultyId;
-            _storedBest = HighScoreStorage.Get(_difficultyId);
             _displayedTimeSeconds = -1;
-            SetStatus(string.Empty);
+            ClearStatus();
             UpdateScoreText(0);
         }
 
-        private void OnScoreChanged(ScoreChangedEventArgs args) => UpdateScoreText(args.TotalScore);
+        private void OnScoreChanged(ScoreChangedEventArgs args)
+        {
+            if (!this)
+            {
+                return;
+            }
+
+            UpdateScoreText(args.TotalScore);
+        }
 
         private void UpdateScoreText(int score)
         {
+            _displayedScore = score;
+
             if (_scoreText == null)
             {
                 return;
             }
 
             int best = HighScoreStorage.GetDisplayBest(_difficultyId, score);
-            _scoreText.text = UiText.ScoreLine(score, best);
+            _scoreText.text = LocalizationService.Localize(LocKeys.HudScoreLine, score, best);
         }
 
         private void OnTimeChanged(TimeChangedEventArgs args)
         {
+            if (!this)
+            {
+                return;
+            }
+
             int totalSeconds = Mathf.CeilToInt(Mathf.Max(0f, args.TimeRemaining));
             if (totalSeconds == _displayedTimeSeconds)
             {
@@ -88,23 +118,41 @@ namespace Gazeus.DesafioMatch3.UI.Views
             }
 
             _displayedTimeSeconds = totalSeconds;
-            int minutes = totalSeconds / 60;
-            int seconds = totalSeconds % 60;
-            _timeText.text = UiText.TimeLine(minutes, seconds);
+            ApplyTimeText(totalSeconds);
         }
 
-        private void OnCountdownChanged(CountdownChangedEventArgs args)
+        private void ApplyTimeText(int totalSeconds)
         {
-            if (_countdownText == null)
+            if (_timeText == null)
             {
                 return;
             }
 
-            _countdownText.text = args.IsVisible ? args.DisplayText : string.Empty;
+            int minutes = totalSeconds / 60;
+            int seconds = totalSeconds % 60;
+            _timeText.text = LocalizationService.Localize(LocKeys.HudTimeLine, minutes, seconds);
+        }
+
+        private void OnCountdownChanged(CountdownChangedEventArgs args)
+        {
+            if (!this || _countdownText == null)
+            {
+                return;
+            }
+
+            if (!args.IsVisible)
+            {
+                _countdownText.text = string.Empty;
+                return;
+            }
+
+            _countdownText.text = args.IsGo
+                ? LocalizationService.Localize(LocKeys.CountdownGo)
+                : args.StepNumber.ToString();
         }
 
         private void OnBoardRegenerated(BoardRegeneratedEventArgs args) =>
-            SetStatus(UiText.StatusBoardReshuffled);
+            SetStatus(LocKeys.StatusBoardReshuffled);
 
         private void OnCascadeStep(CascadeStepEventArgs args)
         {
@@ -113,16 +161,63 @@ namespace Gazeus.DesafioMatch3.UI.Views
                 return;
             }
 
-            SetStatus(UiText.SkullTimePenalty(args.Sequence.SkullsCleared, args.Sequence.SkullTimePenalty));
+            string key = args.Sequence.SkullsCleared == 1
+                ? LocKeys.StatusSkullPenalty
+                : LocKeys.StatusSkullsPenalty;
+
+            SetStatus(key, args.Sequence.SkullsCleared, args.Sequence.SkullTimePenalty);
         }
 
         private void OnGameEnded(GameEndedEventArgs args)
         {
-            SetStatus(string.Empty);
-            _storedBest = HighScoreStorage.Get(_difficultyId);
+            ClearStatus();
             UpdateScoreText(args.FinalScore);
         }
 
-        private void SetStatus(string message) => _statusText.text = message;
+        private void SetStatus(string key, params object[] args)
+        {
+            _statusKey = key;
+            _statusArgs = args ?? System.Array.Empty<object>();
+            ApplyStatusText();
+        }
+
+        private void ClearStatus()
+        {
+            _statusKey = null;
+            _statusArgs = System.Array.Empty<object>();
+            if (_statusText != null)
+            {
+                _statusText.text = string.Empty;
+            }
+        }
+
+        private void ApplyStatusText()
+        {
+            if (_statusText == null)
+            {
+                return;
+            }
+
+            _statusText.text = string.IsNullOrEmpty(_statusKey)
+                ? string.Empty
+                : LocalizationService.Localize(_statusKey, _statusArgs);
+        }
+
+        private void OnLanguageChanged()
+        {
+            if (!this)
+            {
+                return;
+            }
+
+            UpdateScoreText(_displayedScore);
+
+            if (_displayedTimeSeconds >= 0)
+            {
+                ApplyTimeText(_displayedTimeSeconds);
+            }
+
+            ApplyStatusText();
+        }
     }
 }

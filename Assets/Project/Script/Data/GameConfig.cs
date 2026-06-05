@@ -89,9 +89,6 @@ namespace Gazeus.DesafioMatch3.Data
         public float CascadeMultiplierStep => _cascadeMultiplierStep;
         public int TargetScore => _targetScore;
 
-        public int MaxColorTypeCount =>
-            _tileTypeRegistry != null ? _tileTypeRegistry.ColorCount : 0;
-
         public float JokerSpawnChance => Mathf.Clamp01(_jokerSpawnChance);
         public float BombJokerSpawnChance => Mathf.Clamp01(_bombJokerSpawnChance);
         public float SkullSpawnChance => Mathf.Clamp01(_skullSpawnChance);

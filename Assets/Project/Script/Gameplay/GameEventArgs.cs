@@ -1,37 +1,9 @@
 using System;
-using System.Collections.Generic;
 using Gazeus.DesafioMatch3.Data;
 using UnityEngine;
 
 namespace Gazeus.DesafioMatch3.Gameplay
 {
-    public sealed class GameEvents
-    {
-        public event Action<GameStartedEventArgs> GameStarted;
-        public event Action<ScoreChangedEventArgs> ScoreChanged;
-        public event Action<TimeChangedEventArgs> TimeChanged;
-        public event Action<SwapStartedEventArgs> SwapStarted;
-        public event Action<CascadeStepEventArgs> CascadeStep;
-        public event Action<SwapCompletedEventArgs> SwapCompleted;
-        public event Action<BoardRegeneratedEventArgs> BoardRegenerated;
-        public event Action<GameEndedEventArgs> GameEnded;
-        public event Action<CountdownChangedEventArgs> CountdownChanged;
-        public event Action<TutorialGuideEventArgs> TutorialGuideChanged;
-
-        public void RaiseGameStarted(GameStartedEventArgs args) => GameStarted?.Invoke(args);
-        public void RaiseScoreChanged(ScoreChangedEventArgs args) => ScoreChanged?.Invoke(args);
-        public void RaiseTimeChanged(TimeChangedEventArgs args) => TimeChanged?.Invoke(args);
-        public void RaiseSwapStarted(SwapStartedEventArgs args) => SwapStarted?.Invoke(args);
-        public void RaiseCascadeStep(CascadeStepEventArgs args) => CascadeStep?.Invoke(args);
-        public void RaiseSwapCompleted(SwapCompletedEventArgs args) => SwapCompleted?.Invoke(args);
-        public void RaiseBoardRegenerated(BoardRegeneratedEventArgs args) => BoardRegenerated?.Invoke(args);
-        public void RaiseGameEnded(GameEndedEventArgs args) => GameEnded?.Invoke(args);
-        public void RaiseCountdownChanged(CountdownChangedEventArgs args) => CountdownChanged?.Invoke(args);
-
-        public void RaiseTutorialGuideChanged(TutorialGuideEventArgs args) =>
-            TutorialGuideChanged?.Invoke(args);
-    }
-
     public readonly struct TutorialGuideEventArgs
     {
         public bool IsActive { get; }
@@ -89,30 +61,22 @@ namespace Gazeus.DesafioMatch3.Gameplay
 
     public readonly struct CountdownChangedEventArgs
     {
-        public string DisplayText { get; }
         public bool IsVisible { get; }
+        public int StepNumber { get; }
+        public bool IsGo { get; }
 
-        public CountdownChangedEventArgs(string displayText, bool isVisible)
+        private CountdownChangedEventArgs(bool isVisible, int stepNumber, bool isGo)
         {
-            DisplayText = displayText;
             IsVisible = isVisible;
+            StepNumber = stepNumber;
+            IsGo = isGo;
         }
 
-        public static CountdownChangedEventArgs Show(string displayText) => new(displayText, true);
+        public static CountdownChangedEventArgs ShowNumber(int step) => new(true, step, false);
 
-        public static CountdownChangedEventArgs Hidden => new(string.Empty, false);
-    }
+        public static CountdownChangedEventArgs ShowGo() => new(true, 0, true);
 
-    public readonly struct SwapStartedEventArgs
-    {
-        public Vector2Int From { get; }
-        public Vector2Int To { get; }
-
-        public SwapStartedEventArgs(Vector2Int from, Vector2Int to)
-        {
-            From = from;
-            To = to;
-        }
+        public static CountdownChangedEventArgs Hidden => new(false, 0, false);
     }
 
     public readonly struct CascadeStepEventArgs
@@ -126,18 +90,6 @@ namespace Gazeus.DesafioMatch3.Gameplay
             Sequence = sequence;
             ComboIndex = comboIndex;
             ScoreDelta = scoreDelta;
-        }
-    }
-
-    public readonly struct SwapCompletedEventArgs
-    {
-        public IReadOnlyList<BoardSequence> Sequences { get; }
-        public int TotalScoreDelta { get; }
-
-        public SwapCompletedEventArgs(IReadOnlyList<BoardSequence> sequences, int totalScoreDelta)
-        {
-            Sequences = sequences;
-            TotalScoreDelta = totalScoreDelta;
         }
     }
 

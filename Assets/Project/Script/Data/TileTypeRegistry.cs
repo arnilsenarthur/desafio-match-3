@@ -53,53 +53,15 @@ namespace Gazeus.DesafioMatch3.Data
             return _prefabLookup;
         }
 
-        public GameObject GetPrefab(int type)
-        {
-            GameObject[] lookup = GetPrefabLookupTable();
-            if (lookup == null || type < 0 || type >= lookup.Length)
-            {
-                return null;
-            }
-
-            return lookup[type];
-        }
-
         public bool IsEmpty(int type) => type < 0;
 
         public bool IsColor(int type) => type >= 0 && type < ColorCount;
-
-        public TileKind GetKind(int type)
-        {
-            if (IsColor(type))
-            {
-                return TileKind.Color;
-            }
-
-            if (type == JokerTypeId)
-            {
-                return TileKind.Joker;
-            }
-
-            if (type == BombTypeId)
-            {
-                return TileKind.BombJoker;
-            }
-
-            if (type == SkullTypeId)
-            {
-                return TileKind.Skull;
-            }
-
-            return TileKind.Color;
-        }
 
         public bool IsJoker(int type) => type == JokerTypeId;
 
         public bool IsBomb(int type) => type == BombTypeId;
 
         public bool IsSkull(int type) => type == SkullTypeId;
-
-        public bool IsSpecial(int type) => IsJoker(type) || IsBomb(type) || IsSkull(type);
 
         private void OnValidate() => _prefabLookup = null;
 

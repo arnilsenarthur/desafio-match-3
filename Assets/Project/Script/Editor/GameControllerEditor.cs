@@ -77,7 +77,7 @@ namespace Gazeus.DesafioMatch3.Editor
             GameController controller = (GameController)target;
             SerializedProperty fallbackProperty = serializedObject.FindProperty("_fallbackDifficultyId");
 
-            using (new EditorGUI.DisabledScope(controller.GameService == null))
+            using (new EditorGUI.DisabledScope(!GameService.IsActive))
             {
                 if (GUILayout.Button("Restart Game"))
                 {
@@ -89,12 +89,12 @@ namespace Gazeus.DesafioMatch3.Editor
 
                 if (GUILayout.Button("+15 Seconds"))
                 {
-                    controller.GameService.AdjustTime(15f);
+                    GameService.AdjustTime(15f);
                 }
 
                 if (GUILayout.Button("-15 Seconds"))
                 {
-                    controller.GameService.AdjustTime(-15f);
+                    GameService.AdjustTime(-15f);
                 }
 
                 EditorGUILayout.EndHorizontal();

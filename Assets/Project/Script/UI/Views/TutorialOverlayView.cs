@@ -1,4 +1,4 @@
-using Gazeus.DesafioMatch3.UI;
+using Gazeus.DesafioMatch3.Localization;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -25,62 +25,98 @@ namespace Gazeus.DesafioMatch3.UI.Views
         [SerializeField]
         private GameObject _skipButtonRoot;
 
+        private string _titleKey;
+        private string _bodyKey;
+        private int _stepIndex;
+        private int _stepCount;
+        private bool _showStepCounter;
+
         private void Awake()
         {
             ApplyBottomBarLayout();
             ConfigureRaycasts();
         }
 
-        public void ShowIntro(string title, string body)
+        private void OnEnable() => LocalizationService.LanguageChanged += OnLanguageChanged;
+
+        private void OnDisable() => LocalizationService.LanguageChanged -= OnLanguageChanged;
+
+        public void ShowIntro(string titleKey, string bodyKey)
         {
             gameObject.SetActive(true);
             ApplyBottomBarLayout();
             ApplyBottomBarContentLayout();
 
-            if (_titleText != null)
-            {
-                _titleText.text = title;
-            }
-
-            if (_bodyText != null)
-            {
-                _bodyText.text = body;
-            }
+            _titleKey = titleKey;
+            _bodyKey = bodyKey;
+            _showStepCounter = false;
 
             SetStepCounterVisible(false);
             SetContinueVisible(true);
             SetSkipVisible(true);
+            ApplyLocalizedText();
         }
 
-        public void ShowPracticeStep(int stepIndex, int stepCount, string title, string body)
+        public void ShowPracticeStep(int stepIndex, int stepCount, string titleKey, string bodyKey)
         {
             gameObject.SetActive(true);
             ApplyBottomBarLayout();
             ApplyBottomBarContentLayout();
 
-            if (_titleText != null)
-            {
-                _titleText.text = title;
-            }
-
-            if (_bodyText != null)
-            {
-                _bodyText.text = body;
-            }
-
-            if (_stepCounterText != null)
-            {
-                _stepCounterText.gameObject.SetActive(true);
-                _stepCounterText.text = UiText.TutorialStepCounter(stepIndex, stepCount);
-            }
+            _titleKey = titleKey;
+            _bodyKey = bodyKey;
+            _stepIndex = stepIndex;
+            _stepCount = stepCount;
+            _showStepCounter = true;
 
             SetContinueVisible(false);
             SetSkipVisible(true);
+            ApplyLocalizedText();
         }
 
         public void Hide()
         {
             gameObject.SetActive(false);
+        }
+
+        private void OnLanguageChanged()
+        {
+            if (!this)
+            {
+                return;
+            }
+
+            ApplyLocalizedText();
+        }
+
+        private void ApplyLocalizedText()
+        {
+            if (!this)
+            {
+                return;
+            }
+
+            if (_titleText != null && !string.IsNullOrEmpty(_titleKey))
+            {
+                _titleText.text = LocalizationService.Localize(_titleKey);
+            }
+
+            if (_bodyText != null && !string.IsNullOrEmpty(_bodyKey))
+            {
+                _bodyText.text = LocalizationService.Localize(_bodyKey);
+            }
+
+            if (_stepCounterText != null)
+            {
+                _stepCounterText.gameObject.SetActive(_showStepCounter);
+                if (_showStepCounter)
+                {
+                    _stepCounterText.text = LocalizationService.Localize(
+                        LocKeys.TutorialStepCounter,
+                        _stepIndex,
+                        _stepCount);
+                }
+            }
         }
 
         private void ApplyBottomBarLayout()

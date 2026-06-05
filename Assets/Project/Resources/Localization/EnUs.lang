@@ -1,0 +1,75 @@
+# English (US)
+
+main_menu.title=Match 3
+main_menu.play=Play
+main_menu.quit=Quit
+main_menu.choose_difficulty=Choose Difficulty
+main_menu.back=Back
+main_menu.settings=Settings
+
+difficulty.easy=Easy
+difficulty.normal=Normal
+difficulty.hard=Hard
+
+common.cancel=Cancel
+
+pause.title=Paused
+pause.resume=Resume
+pause.main_menu=Main Menu
+pause.settings=Settings
+
+settings.title=Settings
+settings.language=Language
+settings.vfx_volume=VFX Volume
+settings.music_volume=Music Volume
+settings.animation_speed=Animation Speed
+settings.play_tutorial_next_time=Play tutorial next match
+settings.close=Close
+
+game_over.panel_title=Game Over
+game_over.retry=Retry
+
+tutorial.continue=Start tutorial
+tutorial.skip=Skip tutorial
+
+countdown.go=GO!
+
+status.board_reshuffled=Board reshuffled!
+status.skull_penalty=Skull! -{0:0.#}s
+status.skulls_penalty=Skulls! -{0:0.#}s
+
+confirm.restart.title=Restart Game?
+confirm.restart.message=Current progress will be lost.
+confirm.restart.button=Restart
+
+confirm.main_menu.title=Leave Game?
+confirm.main_menu.message=Return to main menu? Current progress will be lost.
+confirm.main_menu.button=Main Menu
+
+game_over.goal_reached=Goal reached!
+game_over.time_up=Time's up!
+game_over.default=Game over
+game_over.new_high_score=\nNew high score!
+game_over.message={0}\nScore: {1}\nBest: {2}{3}
+
+hud.score_line=Score: {0}  Best: {1}
+hud.time_line=Time: {0:00}:{1:00}
+
+tutorial.intro.title=How to Play
+tutorial.intro.body=Learn matching, combos, and special tiles on a practice board.\nThen you will start a real match with the timer.
+tutorial.step_counter=Step {0} of {1}
+
+tutorial.step.match3.title=Match 3
+tutorial.step.match3.instruction=Tap tile 1, then tile 2 to swap. Make a line of 3 matching colors.
+
+tutorial.step.match4.title=Match 4+
+tutorial.step.match4.instruction=Tap tile 1, then tile 2. Longer lines score more.
+
+tutorial.step.joker.title=Joker
+tutorial.step.joker.instruction=Tap tile 1, then tile 2. Joker counts as any color already in that line.
+
+tutorial.step.bomb.title=Bomb Joker
+tutorial.step.bomb.instruction=When matched, the Bomb clears its whole row and column. Chain with other bombs.
+
+tutorial.step.skull.title=Skull
+tutorial.step.skull.instruction=Clearing skulls removes time from the clock. Avoid them when you can!

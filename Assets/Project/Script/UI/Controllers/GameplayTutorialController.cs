@@ -1,7 +1,8 @@
 using System.Collections;
+using Gazeus.DesafioMatch3.App;
 using Gazeus.DesafioMatch3.Data;
 using Gazeus.DesafioMatch3.Gameplay;
-using Gazeus.DesafioMatch3.UI;
+using Gazeus.DesafioMatch3.Localization;
 using Gazeus.DesafioMatch3.UI.Views;
 using UnityEngine;
 
@@ -12,9 +13,6 @@ namespace Gazeus.DesafioMatch3.UI.Controllers
     {
         [SerializeField]
         private GameController _gameController;
-
-        [SerializeField]
-        private GameConfig _gameConfig;
 
         [SerializeField]
         private TutorialOverlayView _overlay;
@@ -29,7 +27,8 @@ namespace Gazeus.DesafioMatch3.UI.Controllers
 
         public bool IsShowingIntro => _showingIntro;
 
-        private bool ShouldShowTutorial => _gameConfig != null && _gameConfig.ShowTutorialOnNextMatch;
+        private GameConfig Config => _gameController != null ? _gameController.Config : null;
+
 
         private void Awake()
         {
@@ -44,6 +43,10 @@ namespace Gazeus.DesafioMatch3.UI.Controllers
             }
         }
 
+        private void OnDisable() => StopAdvanceCoroutine();
+
+        private void OnDestroy() => StopAdvanceCoroutine();
+
         public bool TryBeginInteractiveTutorial()
         {
             if (_gameController == null)
@@ -51,38 +54,45 @@ namespace Gazeus.DesafioMatch3.UI.Controllers
                 _gameController = GetComponent<GameController>();
             }
 
-            if (_gameConfig == null || _overlay == null || _gameController == null)
+            GameConfig config = Config;
+            if (config == null || _overlay == null || _gameController == null)
             {
                 Debug.LogError(
-                    "Tutorial cannot start: assign GameConfig, TutorialOverlayView on TutorialPanel, and GameController.");
+                    "Tutorial cannot start: assign GameController, TutorialOverlayView on TutorialPanel.");
                 return false;
             }
 
-            if (!ShouldShowTutorial)
+            if (!SettingsService.PlayTutorialNextTime)
             {
                 return false;
             }
 
-            TileTypeRegistry registry = _gameConfig.TileTypeRegistry;
+            TileTypeRegistry registry = config.TileTypeRegistry;
             if (registry == null || !registry.IsConfigured)
             {
                 Debug.LogError("Tutorial cannot start: Tile Type Registry is missing or not configured.");
                 return false;
             }
 
-            _steps = TutorialLayouts.BuildSteps(registry, _gameConfig.BoardWidth, _gameConfig.BoardHeight);
+            _steps = TutorialLayouts.BuildSteps(registry, config.BoardWidth, config.BoardHeight);
             _stepIndex = 0;
             _showingIntro = true;
             _waitingForStepComplete = false;
             IsActive = true;
 
-            _gameController.GameService.EnterTutorialMode();
+            if (!GameService.IsActive)
+            {
+                return false;
+            }
+
+            GameService.EnterTutorialMode();
             _gameController.RefreshTutorialBoard();
             _gameController.SetPaused(false);
             _gameController.SetInteractionLocked(true);
             _gameController.BeginTutorialSession();
 
-            _overlay.ShowIntro(UiText.TutorialIntroTitle, UiText.TutorialIntroBody);
+            SettingsService.ConsumePlayTutorialNextTime();
+            _overlay.ShowIntro(LocKeys.TutorialIntroTitle, LocKeys.TutorialIntroBody);
             return true;
         }
 
@@ -106,12 +116,7 @@ namespace Gazeus.DesafioMatch3.UI.Controllers
 
             _waitingForStepComplete = true;
             _gameController.SetInteractionLocked(true);
-
-            if (_advanceCoroutine != null)
-            {
-                StopCoroutine(_advanceCoroutine);
-            }
-
+            StopAdvanceCoroutine();
             _advanceCoroutine = StartCoroutine(AdvanceAfterDelay(0.85f));
         }
 
@@ -128,6 +133,12 @@ namespace Gazeus.DesafioMatch3.UI.Controllers
         private IEnumerator AdvanceAfterDelay(float delay)
         {
             yield return new WaitForSeconds(delay);
+
+            if (!this || !isActiveAndEnabled || _gameController == null)
+            {
+                yield break;
+            }
+
             _advanceCoroutine = null;
             _waitingForStepComplete = false;
             _stepIndex++;
@@ -143,6 +154,11 @@ namespace Gazeus.DesafioMatch3.UI.Controllers
 
         private void ShowCurrentStep()
         {
+            if (_gameController == null || _overlay == null || _steps == null)
+            {
+                return;
+            }
+
             TutorialStepDefinition step = _steps[_stepIndex];
             _gameController.ApplyTutorialStep(step);
             _overlay.ShowPracticeStep(_stepIndex + 1, _steps.Length, step.Title, step.Instruction);
@@ -153,28 +169,35 @@ namespace Gazeus.DesafioMatch3.UI.Controllers
 
         private void CompleteTutorial()
         {
-            if (_advanceCoroutine != null)
-            {
-                StopCoroutine(_advanceCoroutine);
-                _advanceCoroutine = null;
-            }
+            StopAdvanceCoroutine();
 
             IsActive = false;
             _showingIntro = false;
             _waitingForStepComplete = false;
-            _overlay.Hide();
+            _overlay?.Hide();
+
+            if (_gameController == null)
+            {
+                return;
+            }
+
             _gameController.ClearTutorialGuide();
-            _gameController.GameService.ExitTutorialMode();
+            if (GameService.IsActive)
+            {
+                GameService.ExitTutorialMode();
+            }
             _gameController.FinishTutorialAndStartMatch();
         }
 
-        private void OnDestroy()
+        private void StopAdvanceCoroutine()
         {
-            if (_advanceCoroutine != null)
+            if (_advanceCoroutine == null)
             {
-                StopCoroutine(_advanceCoroutine);
+                return;
             }
 
+            StopCoroutine(_advanceCoroutine);
+            _advanceCoroutine = null;
         }
     }
 }

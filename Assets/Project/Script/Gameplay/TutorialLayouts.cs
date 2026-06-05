@@ -1,4 +1,5 @@
 using Gazeus.DesafioMatch3.Data;
+using Gazeus.DesafioMatch3.Localization;
 using UnityEngine;
 
 namespace Gazeus.DesafioMatch3.Gameplay
@@ -15,8 +16,8 @@ namespace Gazeus.DesafioMatch3.Gameplay
             return new[]
             {
                 Step(
-                    "Match 3",
-                    "Tap tile 1, then tile 2 to swap. Make a line of 3 matching colors.",
+                    LocKeys.TutorialStepMatch3Title,
+                    LocKeys.TutorialStepMatch3Instruction,
                     m, selectDx: 0, selectDy: 0, swapDx: 1, swapDy: 0,
                     Tile(m, -1, 0, 0),
                     Tile(m, 0, 0, 1),
@@ -25,8 +26,8 @@ namespace Gazeus.DesafioMatch3.Gameplay
                     Tile(m, 3, 0, 1)),
 
                 Step(
-                    "Match 4+",
-                    "Tap tile 1, then tile 2. Longer lines score more.",
+                    LocKeys.TutorialStepMatch4Title,
+                    LocKeys.TutorialStepMatch4Instruction,
                     m, selectDx: 1, selectDy: 1, swapDx: 1, swapDy: 2,
                     Tile(m, 1, -2, 0),
                     Tile(m, 1, -1, 0),
@@ -35,8 +36,8 @@ namespace Gazeus.DesafioMatch3.Gameplay
                     Tile(m, 1, 2, 0)),
 
                 Step(
-                    "Joker",
-                    "Tap tile 1, then tile 2. Joker counts as any color already in that line.",
+                    LocKeys.TutorialStepJokerTitle,
+                    LocKeys.TutorialStepJokerInstruction,
                     m, selectDx: 0, selectDy: 0, swapDx: 1, swapDy: 0,
                     Tile(m, -1, 0, 0),
                     Tile(m, 0, 0, 0),
@@ -45,8 +46,8 @@ namespace Gazeus.DesafioMatch3.Gameplay
                     Tile(m, 3, 0, 1)),
 
                 Step(
-                    "Bomb Joker",
-                    "When matched, the Bomb clears its whole row and column. Chain with other bombs.",
+                    LocKeys.TutorialStepBombTitle,
+                    LocKeys.TutorialStepBombInstruction,
                     m, selectDx: 1, selectDy: 0, swapDx: 2, swapDy: 0,
                     Tile(m, -1, 0, 0),
                     Tile(m, 0, 0, 0),
@@ -55,8 +56,8 @@ namespace Gazeus.DesafioMatch3.Gameplay
                     Tile(m, 3, 0, 2)),
 
                 Step(
-                    "Skull",
-                    "Clearing skulls removes time from the clock. Avoid them when you can!",
+                    LocKeys.TutorialStepSkullTitle,
+                    LocKeys.TutorialStepSkullInstruction,
                     m, selectDx: 0, selectDy: 0, swapDx: 1, swapDy: 0,
                     Tile(m, -1, 0, 0),
                     Tile(m, 0, 0, skull),

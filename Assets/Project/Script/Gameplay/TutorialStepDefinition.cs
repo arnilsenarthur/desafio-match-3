@@ -2,6 +2,7 @@ using UnityEngine;
 
 namespace Gazeus.DesafioMatch3.Gameplay
 {
+    /// <summary>Title and Instruction are localization keys for <see cref="Localization.LocalizationService.Localize"/>.</summary>
     public readonly struct TutorialStepDefinition
     {
         public string Title { get; }

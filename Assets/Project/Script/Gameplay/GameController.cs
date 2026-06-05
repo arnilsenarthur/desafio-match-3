@@ -23,9 +23,6 @@ namespace Gazeus.DesafioMatch3.Gameplay
         private GameConfig _gameConfig;
 
         [SerializeField]
-        private GameplayUiController _gameplayUi;
-
-        [SerializeField]
         private GameplayTutorialController _gameplayTutorial;
 
 #if UNITY_EDITOR
@@ -33,58 +30,125 @@ namespace Gazeus.DesafioMatch3.Gameplay
         private string _fallbackDifficultyId = "normal";
 #endif
 
-        private GameService _gameService;
         private bool _isAnimating;
         private bool _isPaused;
         private bool _isCountdownActive;
         private bool _interactionLocked;
         private bool _tutorialAdvancePending;
+        private bool _wired;
+        private bool _sessionStarted;
         private Coroutine _countdownCoroutine;
         private Transform _boardTweenRoot;
 
-        public GameService GameService => _gameService;
+        public GameConfig Config => _gameConfig;
         public bool IsPaused => _isPaused;
 
         private void Awake()
         {
-            if (_gameplayUi == null)
-            {
-                _gameplayUi = GetComponent<GameplayUiController>();
-            }
-
             if (_gameplayTutorial == null)
             {
                 _gameplayTutorial = GetComponent<GameplayTutorialController>();
             }
 
             _boardTweenRoot = _boardView != null ? _boardView.transform : null;
-            _gameService = new GameService(_gameConfig);
-            _boardView.Configure(_gameConfig, _gameService.Events);
-            _boardView.TileClicked += OnTileClick;
-            _hudView.Bind(_gameService.Events);
         }
 
-        private void OnDisable() => Cleanup();
-
-        private void OnDestroy() => Cleanup();
-
-        private void Cleanup()
+        private void OnEnable()
         {
-            StopCountdown();
+            if (!Wire())
+            {
+                Debug.LogError("GameController could not wire gameplay systems.", this);
+            }
+        }
+
+        private void OnDisable() => StopRunningWork();
+
+        private void OnDestroy() => Unwire();
+
+        private void Start() => TryStartSession();
+
+        private bool Wire()
+        {
+            if (_wired)
+            {
+                return GameService.IsActive && _boardView != null && _boardView.IsReady;
+            }
+
+            if (_gameConfig == null || _boardView == null || _hudView == null)
+            {
+                return false;
+            }
+
+            GameService.Attach(this);
+            GameService.BeginSession(_gameConfig);
+
+            if (!_boardView.Configure(_gameConfig))
+            {
+                GameService.EndSession();
+                GameService.Detach(this);
+                return false;
+            }
+
+            _boardView.TileClicked += OnTileClick;
+            _hudView.Bind();
+            _wired = true;
+            return true;
+        }
+
+        private void Unwire()
+        {
+            StopRunningWork();
 
             if (_boardView != null)
             {
                 _boardView.TileClicked -= OnTileClick;
             }
 
+            if (_hudView != null)
+            {
+                _hudView.Unbind();
+            }
+
             if (_boardTweenRoot != null)
             {
                 DOTween.Kill(_boardTweenRoot, true);
             }
+
+            GameService.EndSession();
+            GameService.Detach(this);
+            _wired = false;
+            _sessionStarted = false;
         }
 
-        private void Start()
+        private void StopRunningWork()
         {
+            StopCountdown();
+            _isAnimating = false;
+            _tutorialAdvancePending = false;
+
+            if (_boardTweenRoot != null)
+            {
+                DOTween.Kill(_boardTweenRoot, true);
+            }
+
+            if (_boardView != null)
+            {
+                _boardView.CancelRunningAnimations();
+            }
+
+            SyncTimerPaused();
+            RefreshInteractionState();
+        }
+
+        private void TryStartSession()
+        {
+            if (_sessionStarted || !_wired || !isActiveAndEnabled)
+            {
+                return;
+            }
+
+            _sessionStarted = true;
+
             if (!TryBeginRun(ResolveDifficultyId(), startCountdown: false))
             {
                 SceneLoader.LoadMainMenu();
@@ -115,51 +179,60 @@ namespace Gazeus.DesafioMatch3.Gameplay
             return tutorial.TryBeginInteractiveTutorial();
         }
 
-        private void BeginMatchAfterTutorial()
-        {
-            if (_gameplayUi != null)
-            {
-                _gameplayUi.BeginMatchCountdown();
-            }
-            else
-            {
-                BeginCountdown();
-            }
-        }
-
-        public void BeginGameplayCountdown() => BeginCountdown();
+        private void BeginMatchAfterTutorial() => BeginCountdown();
 
         public void BeginTutorialSession()
         {
             _isAnimating = false;
-            _interactionLocked = false;
             _tutorialAdvancePending = false;
             RefreshInteractionState();
         }
 
         public void RefreshTutorialBoard()
         {
-            _gameService.RegenerateTutorialBaseBoard();
+            if (!EnsureGameReady())
+            {
+                return;
+            }
+
+            GameService.RegenerateTutorialBaseBoard();
             _boardView.ClearSelection();
-            _boardView.RebuildFromState(_gameService.Board);
+            _boardView.RebuildFromState(GameService.Board);
             ClearTutorialGuide();
             RefreshInteractionState();
         }
 
         public void ApplyTutorialStep(TutorialStepDefinition step)
         {
-            _gameService.ApplyTutorialStep(step);
+            if (!EnsureGameReady())
+            {
+                return;
+            }
+
+            GameService.ApplyTutorialStep(step);
             _boardView.ClearSelection();
-            _boardView.RebuildFromState(_gameService.Board);
+            _boardView.RebuildFromState(GameService.Board);
             RefreshInteractionState();
         }
 
-        public void SetTutorialGuide(Vector2Int selectCell, Vector2Int swapTargetCell) =>
-            _gameService.Events.RaiseTutorialGuideChanged(
-                new TutorialGuideEventArgs(true, selectCell, swapTargetCell));
+        public void SetTutorialGuide(Vector2Int selectCell, Vector2Int swapTargetCell)
+        {
+            if (!GameService.IsActive)
+            {
+                return;
+            }
 
-        public void ClearTutorialGuide() =>
-            _gameService.Events.RaiseTutorialGuideChanged(TutorialGuideEventArgs.Inactive);
+            GameService.NotifyTutorialGuideChanged(
+                new TutorialGuideEventArgs(true, selectCell, swapTargetCell));
+        }
+
+        public void ClearTutorialGuide()
+        {
+            if (GameService.IsActive)
+            {
+                GameService.NotifyTutorialGuideChanged(TutorialGuideEventArgs.Inactive);
+            }
+        }
 
         public void SetInteractionLocked(bool locked)
         {
@@ -169,6 +242,11 @@ namespace Gazeus.DesafioMatch3.Gameplay
 
         public void FinishTutorialAndStartMatch()
         {
+            if (_boardView == null)
+            {
+                return;
+            }
+
             _isAnimating = false;
             _interactionLocked = false;
             _tutorialAdvancePending = false;
@@ -193,7 +271,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
             }
 
 #if UNITY_EDITOR
-            if (_gameConfig.TryGetDifficulty(_fallbackDifficultyId, out _))
+            if (_gameConfig != null && _gameConfig.TryGetDifficulty(_fallbackDifficultyId, out _))
             {
                 RestartGame(_fallbackDifficultyId);
             }
@@ -202,7 +280,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
 
         public void SetPaused(bool paused)
         {
-            if (_gameService.IsGameOver)
+            if (!GameService.IsActive || GameService.IsGameOver)
             {
                 return;
             }
@@ -221,7 +299,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
 
         public void RestartGame(string difficultyId)
         {
-            if (!_gameConfig.TryGetDifficulty(difficultyId, out _))
+            if (_gameConfig == null || !_gameConfig.TryGetDifficulty(difficultyId, out _))
             {
                 Debug.LogError($"Cannot restart game with unknown difficulty id: {difficultyId}");
                 return;
@@ -232,13 +310,20 @@ namespace Gazeus.DesafioMatch3.Gameplay
             _tutorialAdvancePending = false;
             StopCountdown();
             SetPaused(false);
-            DOTween.Kill(_boardView.transform, true);
+
+            if (_boardView != null)
+            {
+                DOTween.Kill(_boardView.transform, true);
+                _boardView.ClearBoard();
+            }
 
             GameRunContext.Clear();
             GameRunContext.SelectDifficulty(difficultyId);
 
-            _boardView.ClearBoard();
-            _gameService.ExitTutorialMode();
+            if (GameService.IsActive)
+            {
+                GameService.ExitTutorialMode();
+            }
 
             if (!TryBeginRun(difficultyId, startCountdown: false))
             {
@@ -246,7 +331,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
                 return;
             }
 
-            if (_gameplayUi != null && _gameplayUi.TryHandleMatchReadyForTutorial())
+            if (TryStartTutorial())
             {
                 RefreshInteractionState();
                 return;
@@ -258,12 +343,14 @@ namespace Gazeus.DesafioMatch3.Gameplay
 
         private bool TryBeginRun(string difficultyId, bool startCountdown)
         {
-            if (!_gameService.TryStart(difficultyId, out BoardState board))
+            if (!EnsureGameReady() || !_boardView.IsReady ||
+                !GameService.TryStart(difficultyId, out BoardState board))
             {
                 return false;
             }
 
             _boardView.CreateBoard(board);
+
             if (startCountdown)
             {
                 BeginCountdown();
@@ -272,8 +359,23 @@ namespace Gazeus.DesafioMatch3.Gameplay
             return true;
         }
 
+        private bool EnsureGameReady()
+        {
+            if (_wired && GameService.IsActive && _boardView != null && _boardView.IsReady)
+            {
+                return true;
+            }
+
+            return Wire();
+        }
+
         private string ResolveDifficultyId()
         {
+            if (_gameConfig == null)
+            {
+                return null;
+            }
+
             if (GameRunContext.HasSelectedDifficulty &&
                 _gameConfig.TryGetDifficulty(GameRunContext.SelectedDifficultyId, out _))
             {
@@ -281,8 +383,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
             }
 
 #if UNITY_EDITOR
-            if (_gameConfig != null &&
-                _gameConfig.TryGetDifficulty(_fallbackDifficultyId, out _))
+            if (_gameConfig.TryGetDifficulty(_fallbackDifficultyId, out _))
             {
                 return _fallbackDifficultyId;
             }
@@ -293,6 +394,11 @@ namespace Gazeus.DesafioMatch3.Gameplay
 
         private void BeginCountdown()
         {
+            if (!isActiveAndEnabled || !EnsureGameReady())
+            {
+                return;
+            }
+
             StopCountdown();
             _countdownCoroutine = StartCoroutine(RunCountdown());
         }
@@ -311,7 +417,12 @@ namespace Gazeus.DesafioMatch3.Gameplay
             }
 
             _isCountdownActive = false;
-            _gameService.Events.RaiseCountdownChanged(CountdownChangedEventArgs.Hidden);
+
+            if (GameService.IsActive)
+            {
+                GameService.NotifyCountdownChanged(CountdownChangedEventArgs.Hidden);
+            }
+
             SyncTimerPaused();
             RefreshInteractionState();
         }
@@ -320,16 +431,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
         {
             try
             {
-                yield return GameplayCountdownRunner.Run(
-                    _gameConfig,
-                    _gameService.Events,
-                    () => _isPaused,
-                    active =>
-                    {
-                        _isCountdownActive = active;
-                        SyncTimerPaused();
-                        RefreshInteractionState();
-                    });
+                yield return GameplayCountdownRunner.Run(_gameConfig, SetCountdownActive, this);
             }
             finally
             {
@@ -337,39 +439,71 @@ namespace Gazeus.DesafioMatch3.Gameplay
 
                 if (_isCountdownActive)
                 {
-                    _isCountdownActive = false;
-                    _gameService.Events.RaiseCountdownChanged(CountdownChangedEventArgs.Hidden);
-                    SyncTimerPaused();
-                    RefreshInteractionState();
+                    SetCountdownActive(false);
                 }
             }
         }
 
-        private void Update()
+        private void SetCountdownActive(bool active)
         {
+            if (!this)
+            {
+                return;
+            }
+
+            _isCountdownActive = active;
             SyncTimerPaused();
-            _gameService.Tick(Time.deltaTime);
+            RefreshInteractionState();
         }
 
-        private void SyncTimerPaused() =>
-            _gameService.TimerPaused = _isAnimating || _isPaused || _isCountdownActive;
+        private void Update()
+        {
+            if (!GameService.IsActive)
+            {
+                return;
+            }
+
+            SyncTimerPaused();
+            GameService.Tick(Time.deltaTime);
+        }
+
+        private void SyncTimerPaused()
+        {
+            if (!GameService.IsActive)
+            {
+                return;
+            }
+
+            GameService.TimerPaused = _isAnimating || _isPaused || _isCountdownActive;
+        }
 
         private void RefreshInteractionState()
         {
+            if (_boardView == null || !GameService.IsActive)
+            {
+                return;
+            }
+
             bool canInteract = !_isPaused && !_isAnimating && !_isCountdownActive && !_interactionLocked &&
-                               !_gameService.IsGameOver;
+                               !GameService.IsGameOver;
             _boardView.SetInteractionEnabled(canInteract);
         }
 
         private void AnimateBoard(List<BoardSequence> boardSequences, Action onComplete)
         {
+            if (!this)
+            {
+                return;
+            }
+
             if (boardSequences == null || boardSequences.Count == 0)
             {
-                onComplete();
+                onComplete?.Invoke();
                 return;
             }
 
             Sequence sequence = DOTween.Sequence();
+            sequence.SetLink(gameObject, LinkBehaviour.KillOnDestroy);
 
             foreach (BoardSequence boardSequence in boardSequences)
             {
@@ -378,12 +512,25 @@ namespace Gazeus.DesafioMatch3.Gameplay
                 sequence.Append(_boardView.CreateTile(boardSequence.AddedTiles));
             }
 
-            sequence.OnComplete(() => onComplete());
+            sequence.OnComplete(() =>
+            {
+                if (this)
+                {
+                    onComplete?.Invoke();
+                }
+            });
         }
 
         private void OnTileClick(Vector2Int cell)
         {
-            if (_isPaused || _isAnimating || _isCountdownActive || _gameService.IsGameOver)
+            if (!GameService.IsActive || _interactionLocked || _isPaused || _isAnimating || _isCountdownActive ||
+                GameService.IsGameOver)
+            {
+                return;
+            }
+
+            GameplayTutorialController tutorial = GetTutorialController();
+            if (tutorial != null && tutorial.IsActive && tutorial.IsShowingIntro)
             {
                 return;
             }
@@ -421,12 +568,11 @@ namespace Gazeus.DesafioMatch3.Gameplay
                 return;
             }
 
-            GameplayTutorialController tutorial = GetTutorialController();
             bool tutorialPractice = tutorial != null && tutorial.IsActive && !tutorial.IsShowingIntro;
 
             bool isValid = tutorialPractice
-                ? _gameService.IsTutorialSwapValid(selectedCell, cell)
-                : _gameService.IsValidMovement(selectedCell, cell);
+                ? GameService.IsTutorialSwapValid(selectedCell, cell)
+                : GameService.IsValidMovement(selectedCell, cell);
 
             _isAnimating = true;
             _boardView.ClearSelection(keepTutorialSwapHint: tutorialPractice);
@@ -438,22 +584,36 @@ namespace Gazeus.DesafioMatch3.Gameplay
                 _tutorialAdvancePending = true;
             }
 
-            _boardView.SwapTiles(selectedCell, cell).onComplete += () =>
+            Tween swapTween = _boardView.SwapTiles(selectedCell, cell);
+            swapTween.SetLink(gameObject, LinkBehaviour.KillOnDestroy);
+            swapTween.onComplete += () =>
             {
+                if (!this || !GameService.IsActive)
+                {
+                    return;
+                }
+
                 if (isValid)
                 {
-                    AnimateBoard(_gameService.ResolveValidSwap(selectedCell, cell), OnSwapAnimationComplete);
+                    AnimateBoard(GameService.ResolveValidSwap(selectedCell, cell), OnSwapAnimationComplete);
                 }
                 else
                 {
-                    _boardView.SwapTiles(cell, selectedCell).onComplete += OnSwapAnimationComplete;
+                    Tween revertTween = _boardView.SwapTiles(cell, selectedCell);
+                    revertTween.SetLink(gameObject, LinkBehaviour.KillOnDestroy);
+                    revertTween.onComplete += OnSwapAnimationComplete;
                 }
             };
         }
 
         private void OnSwapAnimationComplete()
         {
-            if (_gameService.IsTutorialMode)
+            if (!this || !GameService.IsActive)
+            {
+                return;
+            }
+
+            if (GameService.IsTutorialMode)
             {
                 if (_tutorialAdvancePending)
                 {
@@ -461,9 +621,9 @@ namespace Gazeus.DesafioMatch3.Gameplay
                     GetTutorialController()?.OnPracticeSwapCompleted();
                 }
             }
-            else if (_gameService.TryRegenerateBoardIfNoValidMoves())
+            else if (GameService.TryRegenerateBoardIfNoValidMoves())
             {
-                _boardView.SyncFromState(_gameService.Board);
+                _boardView.SyncFromState(GameService.Board);
             }
 
             _isAnimating = false;
