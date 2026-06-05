@@ -20,6 +20,9 @@ namespace Gazeus.DesafioMatch3.UI.Views
         private TMP_Text _stepCounterText;
 
         [SerializeField]
+        private Image _stepImage;
+
+        [SerializeField]
         private GameObject _continueButtonRoot;
 
         [SerializeField]
@@ -54,10 +57,16 @@ namespace Gazeus.DesafioMatch3.UI.Views
             SetStepCounterVisible(false);
             SetContinueVisible(true);
             SetSkipVisible(true);
+            ApplyStepImage(null);
             ApplyLocalizedText();
         }
 
-        public void ShowPracticeStep(int stepIndex, int stepCount, string titleKey, string bodyKey)
+        public void ShowPracticeStep(
+            int stepIndex,
+            int stepCount,
+            string titleKey,
+            string bodyKey,
+            Sprite illustrationSprite)
         {
             gameObject.SetActive(true);
             ApplyBottomBarLayout();
@@ -71,6 +80,7 @@ namespace Gazeus.DesafioMatch3.UI.Views
 
             SetContinueVisible(false);
             SetSkipVisible(true);
+            ApplyStepImage(illustrationSprite);
             ApplyLocalizedText();
         }
 
@@ -214,6 +224,23 @@ namespace Gazeus.DesafioMatch3.UI.Views
             {
                 _skipButtonRoot.SetActive(visible);
             }
+        }
+
+        private void ApplyStepImage(Sprite sprite)
+        {
+            if (_stepImage == null)
+            {
+                return;
+            }
+
+            if (sprite == null)
+            {
+                _stepImage.gameObject.SetActive(false);
+                return;
+            }
+
+            _stepImage.gameObject.SetActive(true);
+            _stepImage.sprite = sprite;
         }
     }
 }

@@ -1,21 +1,23 @@
 using System;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace Gazeus.DesafioMatch3.Data
 {
     [Serializable]
     public class TileDefinitions
     {
+        [FormerlySerializedAs("_colorTileIds")]
         [SerializeField]
-        private string[] _colorTileIds =
+        private string[] _shapeTileIds =
         {
-            "blue",
-            "green",
-            "orange",
-            "yellow",
-            "pink",
-            "purple",
-            "red",
+            "circle",
+            "square",
+            "pentagon",
+            "hexagon",
+            "triangle",
+            "diamond",
+            "star",
         };
 
         [SerializeField]
@@ -32,14 +34,14 @@ namespace Gazeus.DesafioMatch3.Data
         public string SkullId => _skullId;
 
         public bool IsConfigured =>
-            _colorTileIds is { Length: > 0 } &&
+            _shapeTileIds is { Length: > 0 } &&
             !string.IsNullOrEmpty(_jokerId) &&
             !string.IsNullOrEmpty(_bombId) &&
             !string.IsNullOrEmpty(_skullId);
 
         public bool IsEmpty(string typeId) => string.IsNullOrEmpty(typeId);
 
-        public bool IsColor(string typeId) => !IsEmpty(typeId) && Array.IndexOf(_colorTileIds, typeId) >= 0;
+        public bool IsShape(string typeId) => !IsEmpty(typeId) && Array.IndexOf(_shapeTileIds, typeId) >= 0;
 
         public bool IsJoker(string typeId) => !IsEmpty(typeId) && typeId == _jokerId;
 

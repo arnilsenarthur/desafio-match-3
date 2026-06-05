@@ -45,7 +45,8 @@ namespace Gazeus.DesafioMatch3.UI.Views
 
         protected override void OnRelease(PooledTile instance)
         {
-            instance.transform.DOKill();
+            instance.transform.DOKill(true);
+            instance.transform.localScale = Vector3.one;
             base.OnRelease(instance);
         }
 

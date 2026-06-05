@@ -47,10 +47,13 @@ namespace Gazeus.DesafioMatch3.UI.Views
         public Tween CreateTile(List<AddedTileInfo> addedTiles)
         {
             Sequence sequence = DOTween.Sequence();
+
             foreach (AddedTileInfo addedTileInfo in addedTiles)
             {
                 Vector2Int position = addedTileInfo.Position;
                 int index = ToIndex(position.x, position.y);
+
+                ReleaseTileAt(index);
 
                 GameObject tile = _tilePool.GetObject(addedTileInfo.TypeId);
                 _tileSpots[index].SetTile(tile);
@@ -68,6 +71,7 @@ namespace Gazeus.DesafioMatch3.UI.Views
         public Tween DestroyTiles(List<Vector2Int> matchedPosition)
         {
             Sequence sequence = DOTween.Sequence();
+
             foreach (Vector2Int position in matchedPosition)
             {
                 int index = ToIndex(position.x, position.y);
@@ -79,6 +83,7 @@ namespace Gazeus.DesafioMatch3.UI.Views
                     continue;
                 }
 
+                tile.transform.DOKill(true);
                 sequence.Join(tile.transform.DOScale(0f, SettingsService.ScaleDuration(TilePopDuration))
                     .OnComplete(() => _tilePool.ReleaseObject(tile)));
             }
@@ -94,19 +99,31 @@ namespace Gazeus.DesafioMatch3.UI.Views
         public Tween MoveTiles(List<MovedTileInfo> movedTiles)
         {
             Sequence sequence = DOTween.Sequence();
-            foreach (MovedTileInfo movedTileInfo in movedTiles)
-            {
-                Vector2Int from = movedTileInfo.From;
-                Vector2Int to = movedTileInfo.To;
 
-                int fromIndex = ToIndex(from.x, from.y);
-                int toIndex = ToIndex(to.x, to.y);
+            if (movedTiles == null || movedTiles.Count == 0)
+            {
+                sequence.AppendInterval(0.01f);
+                return LinkSequence(sequence);
+            }
+
+            List<MovedTileInfo> orderedMoves = movedTiles.Count > 1
+                ? SortMoves(movedTiles)
+                : movedTiles;
+
+            foreach (MovedTileInfo move in orderedMoves)
+            {
+                int fromIndex = ToIndex(move.From.x, move.From.y);
+                int toIndex = ToIndex(move.To.x, move.To.y);
 
                 GameObject tile = _tiles[fromIndex];
-                sequence.Join(_tileSpots[toIndex].AnimatedSetTile(tile));
+                if (tile == null)
+                {
+                    continue;
+                }
 
-                _tiles[toIndex] = tile;
                 _tiles[fromIndex] = null;
+                _tiles[toIndex] = tile;
+                sequence.Join(_tileSpots[toIndex].AnimatedSetTile(tile));
             }
 
             return LinkSequence(sequence);
@@ -117,13 +134,47 @@ namespace Gazeus.DesafioMatch3.UI.Views
             int fromIndex = ToIndex(from);
             int toIndex = ToIndex(to);
 
+            GameObject fromTile = _tiles[fromIndex];
+            GameObject toTile = _tiles[toIndex];
+
             Sequence sequence = DOTween.Sequence();
-            sequence.Append(_tileSpots[fromIndex].AnimatedSetTile(_tiles[toIndex]));
-            sequence.Join(_tileSpots[toIndex].AnimatedSetTile(_tiles[fromIndex]));
+
+            if (fromTile == null || toTile == null)
+            {
+                sequence.AppendInterval(0.01f);
+                return LinkSequence(sequence);
+            }
+
+            sequence.Append(_tileSpots[fromIndex].AnimatedSetTile(toTile));
+            sequence.Join(_tileSpots[toIndex].AnimatedSetTile(fromTile));
 
             (_tiles[toIndex], _tiles[fromIndex]) = (_tiles[fromIndex], _tiles[toIndex]);
 
             return LinkSequence(sequence);
+        }
+
+        private void ReleaseTileAt(int index)
+        {
+            GameObject tile = _tiles[index];
+            if (tile == null)
+            {
+                return;
+            }
+
+            tile.transform.DOKill(true);
+            _tilePool.ReleaseObject(tile);
+            _tiles[index] = null;
+        }
+
+        private static List<MovedTileInfo> SortMoves(List<MovedTileInfo> moves)
+        {
+            var sorted = new List<MovedTileInfo>(moves);
+            sorted.Sort(static (a, b) =>
+            {
+                int compareY = a.From.y.CompareTo(b.From.y);
+                return compareY != 0 ? compareY : a.From.x.CompareTo(b.From.x);
+            });
+            return sorted;
         }
 
         private Sequence LinkSequence(Sequence sequence)

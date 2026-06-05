@@ -14,16 +14,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: DesafioMatch3::Gazeus.DesafioMatch3.Data.TutorialStepDefinition
   _titleKey: tutorial.step.bomb.title
   _instructionKey: tutorial.step.bomb.instruction
+  _illustrationSprite: {fileID: -1684549456, guid: 4747a24765656764a8db831a3237c64c, type: 3}
   _selectOffset: {x: 1, y: 0}
   _swapOffset: {x: 2, y: 0}
   _cells:
   - _offset: {x: -1, y: 0}
-    _typeId: blue
+    _typeId: circle
   - _offset: {x: 0, y: 0}
-    _typeId: blue
+    _typeId: circle
   - _offset: {x: 1, y: 0}
-    _typeId: orange
+    _typeId: pentagon
   - _offset: {x: 2, y: 0}
     _typeId: bomb
   - _offset: {x: 3, y: 0}
-    _typeId: orange
+    _typeId: pentagon

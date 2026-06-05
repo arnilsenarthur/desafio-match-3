@@ -169,7 +169,8 @@ namespace Gazeus.DesafioMatch3.UI.Controllers
                 _stepIndex + 1,
                 _steps.Length,
                 step.TitleKey,
-                step.InstructionKey);
+                step.InstructionKey,
+                step.IllustrationSprite);
             _gameController.SetInteractionLocked(false);
             _gameController.SetPaused(false);
             _gameController.SetTutorialGuide(

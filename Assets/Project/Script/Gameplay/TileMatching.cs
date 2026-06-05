@@ -22,8 +22,8 @@ namespace Gazeus.DesafioMatch3.Gameplay
             clearedRows.Clear();
             clearedColumns.Clear();
 
-            ScanColorRuns(board, tiles, matchedFlags, clearedRows, clearedColumns, horizontal: true);
-            ScanColorRuns(board, tiles, matchedFlags, clearedRows, clearedColumns, horizontal: false);
+            ScanShapeRuns(board, tiles, matchedFlags, clearedRows, clearedColumns, horizontal: true);
+            ScanShapeRuns(board, tiles, matchedFlags, clearedRows, clearedColumns, horizontal: false);
             ScanSkullRuns(board, tiles, matchedFlags, horizontal: true);
             ScanSkullRuns(board, tiles, matchedFlags, horizontal: false);
 
@@ -70,8 +70,8 @@ namespace Gazeus.DesafioMatch3.Gameplay
                 return false;
             }
 
-            return MeasureColorRunThroughCell(board, tiles, x, y, 1, 0) >= 3 ||
-                   MeasureColorRunThroughCell(board, tiles, x, y, 0, 1) >= 3 ||
+            return MeasureShapeRunThroughCell(board, tiles, x, y, 1, 0) >= 3 ||
+                   MeasureShapeRunThroughCell(board, tiles, x, y, 0, 1) >= 3 ||
                    GetSkullRunLengthAt(board, tiles, x, y, horizontal: true) >= 3 ||
                    GetSkullRunLengthAt(board, tiles, x, y, horizontal: false) >= 3;
         }
@@ -119,32 +119,34 @@ namespace Gazeus.DesafioMatch3.Gameplay
             }
         }
 
-        public static bool FitsInColorRun(string cellType, string anchorColor, TileDefinitions tiles)
+        public static bool FitsInShapeRun(string cellType, string anchorShape, TileDefinitions tiles)
         {
-            if (tiles.IsEmpty(cellType))
+            if (tiles.IsEmpty(cellType) || tiles.IsSkull(cellType))
             {
                 return false;
             }
 
-            if (tiles.IsSkull(cellType))
-            {
-                return false;
-            }
-
-            if (string.IsNullOrEmpty(anchorColor))
-            {
-                return tiles.IsColor(cellType) || tiles.IsJoker(cellType) || tiles.IsBomb(cellType);
-            }
-
-            if (cellType == anchorColor)
+            if (IsWildcard(cellType, tiles))
             {
                 return true;
             }
 
-            return tiles.IsJoker(cellType) || tiles.IsBomb(cellType);
+            if (!tiles.IsShape(cellType))
+            {
+                return false;
+            }
+
+            return string.IsNullOrEmpty(anchorShape) || cellType == anchorShape;
         }
 
-        private static void ScanColorRuns(
+        private static bool IsWildcard(string typeId, TileDefinitions tiles) =>
+            tiles.IsJoker(typeId) || tiles.IsBomb(typeId);
+
+        private static bool CanStartShapeRun(string typeId, TileDefinitions tiles) =>
+            !tiles.IsEmpty(typeId) && !tiles.IsSkull(typeId) &&
+            (tiles.IsShape(typeId) || IsWildcard(typeId, tiles));
+
+        private static void ScanShapeRuns(
             BoardState board,
             TileDefinitions tiles,
             bool[] matchedFlags,
@@ -156,19 +158,19 @@ namespace Gazeus.DesafioMatch3.Gameplay
             {
                 for (int y = 0; y < board.Height; y++)
                 {
-                    ScanColorLine(board, tiles, matchedFlags, clearedRows, y, axisX: true);
+                    ScanShapeLine(board, tiles, matchedFlags, clearedRows, y, axisX: true);
                 }
             }
             else
             {
                 for (int x = 0; x < board.Width; x++)
                 {
-                    ScanColorLine(board, tiles, matchedFlags, clearedColumns, x, axisX: false);
+                    ScanShapeLine(board, tiles, matchedFlags, clearedColumns, x, axisX: false);
                 }
             }
         }
 
-        private static void ScanColorLine(
+        private static void ScanShapeLine(
             BoardState board,
             TileDefinitions tiles,
             bool[] matchedFlags,
@@ -185,16 +187,23 @@ namespace Gazeus.DesafioMatch3.Gameplay
                 int y = axisX ? fixedCoord : index;
                 string type = board.GetType(x, y);
 
-                if (tiles.IsEmpty(type) || tiles.IsSkull(type))
+                if (!CanStartShapeRun(type, tiles))
                 {
                     index++;
                     continue;
                 }
 
                 int start = index;
-                string anchorColor = tiles.IsColor(type) ? type : null;
+                string anchorShape = null;
                 int stepX = axisX ? 1 : 0;
                 int stepY = axisX ? 0 : 1;
+
+                if (!TryIncludeInShapeRun(type, ref anchorShape, tiles))
+                {
+                    index++;
+                    continue;
+                }
+
                 index++;
 
                 while (index < lineLength)
@@ -203,7 +212,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
                     int ny = axisX ? fixedCoord : index;
                     string nextType = board.GetType(nx, ny);
 
-                    if (!TryIncludeInColorRun(nextType, ref anchorColor, tiles))
+                    if (!TryIncludeInShapeRun(nextType, ref anchorShape, tiles))
                     {
                         break;
                     }
@@ -218,8 +227,9 @@ namespace Gazeus.DesafioMatch3.Gameplay
                 int endY = axisX ? fixedCoord : index - 1;
 
                 if (runLength < 3 ||
-                    !IsValidColorRunSegment(board, tiles, startX, startY, endX, endY, stepX, stepY))
+                    !IsValidShapeRunSegment(board, tiles, startX, startY, endX, endY, stepX, stepY))
                 {
+                    index = start + 1;
                     continue;
                 }
 
@@ -364,7 +374,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
             return 0;
         }
 
-        private static int MeasureColorRunThroughCell(
+        private static int MeasureShapeRunThroughCell(
             BoardState board,
             TileDefinitions tiles,
             int x,
@@ -373,19 +383,17 @@ namespace Gazeus.DesafioMatch3.Gameplay
             int stepY)
         {
             string centerType = board.GetType(x, y);
-            if (tiles.IsEmpty(centerType) || tiles.IsSkull(centerType))
+            if (!CanStartShapeRun(centerType, tiles))
             {
                 return 0;
             }
 
-            if (!tiles.IsColor(centerType) &&
-                !tiles.IsJoker(centerType) &&
-                !tiles.IsBomb(centerType))
+            string anchorShape = null;
+            if (!TryIncludeInShapeRun(centerType, ref anchorShape, tiles))
             {
                 return 0;
             }
 
-            string anchorColor = tiles.IsColor(centerType) ? centerType : null;
             int startX = x;
             int startY = y;
             int endX = x;
@@ -396,7 +404,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
             while (IsInside(board, cx, cy))
             {
                 string type = board.GetType(cx, cy);
-                if (!TryIncludeInColorRun(type, ref anchorColor, tiles))
+                if (!TryIncludeInShapeRun(type, ref anchorShape, tiles))
                 {
                     break;
                 }
@@ -412,7 +420,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
             while (IsInside(board, fx, fy))
             {
                 string type = board.GetType(fx, fy);
-                if (!TryIncludeInColorRun(type, ref anchorColor, tiles))
+                if (!TryIncludeInShapeRun(type, ref anchorShape, tiles))
                 {
                     break;
                 }
@@ -429,25 +437,25 @@ namespace Gazeus.DesafioMatch3.Gameplay
                 return 0;
             }
 
-            return IsValidColorRunSegment(board, tiles, startX, startY, endX, endY, stepX, stepY)
+            return IsValidShapeRunSegment(board, tiles, startX, startY, endX, endY, stepX, stepY)
                 ? length
                 : 0;
         }
 
-        private static bool TryIncludeInColorRun(string type, ref string anchorColor, TileDefinitions tiles)
+        private static bool TryIncludeInShapeRun(string type, ref string anchorShape, TileDefinitions tiles)
         {
-            if (!FitsInColorRun(type, anchorColor, tiles))
+            if (!FitsInShapeRun(type, anchorShape, tiles))
             {
                 return false;
             }
 
-            if (tiles.IsColor(type))
+            if (tiles.IsShape(type))
             {
-                if (string.IsNullOrEmpty(anchorColor))
+                if (string.IsNullOrEmpty(anchorShape))
                 {
-                    anchorColor = type;
+                    anchorShape = type;
                 }
-                else if (type != anchorColor)
+                else if (type != anchorShape)
                 {
                     return false;
                 }
@@ -456,7 +464,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
             return true;
         }
 
-        private static bool IsValidColorRunSegment(
+        private static bool IsValidShapeRunSegment(
             BoardState board,
             TileDefinitions tiles,
             int startX,
@@ -466,7 +474,8 @@ namespace Gazeus.DesafioMatch3.Gameplay
             int stepX,
             int stepY)
         {
-            string anchorColor = null;
+            string anchorShape = null;
+            int shapeCount = 0;
             int wildcardCount = 0;
             int x = startX;
             int y = startY;
@@ -475,20 +484,22 @@ namespace Gazeus.DesafioMatch3.Gameplay
             {
                 string type = board.GetType(x, y);
 
-                if (tiles.IsColor(type))
+                if (IsWildcard(type, tiles))
                 {
-                    if (string.IsNullOrEmpty(anchorColor))
+                    wildcardCount++;
+                }
+                else if (tiles.IsShape(type))
+                {
+                    if (string.IsNullOrEmpty(anchorShape))
                     {
-                        anchorColor = type;
+                        anchorShape = type;
                     }
-                    else if (type != anchorColor)
+                    else if (type != anchorShape)
                     {
                         return false;
                     }
-                }
-                else if (tiles.IsJoker(type) || tiles.IsBomb(type))
-                {
-                    wildcardCount++;
+
+                    shapeCount++;
                 }
                 else
                 {
@@ -504,7 +515,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
                 y += stepY;
             }
 
-            return !string.IsNullOrEmpty(anchorColor) || wildcardCount >= 3;
+            return (shapeCount >= 1 && shapeCount + wildcardCount >= 3) || wildcardCount >= 3;
         }
 
         private static int CountCellsBetween(int startX, int startY, int endX, int endY, int stepX, int stepY)

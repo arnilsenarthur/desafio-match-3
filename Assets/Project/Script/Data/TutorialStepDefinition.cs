@@ -31,6 +31,9 @@ namespace Gazeus.DesafioMatch3.Data
         private string _instructionKey;
 
         [SerializeField]
+        private Sprite _illustrationSprite;
+
+        [SerializeField]
         private Vector2Int _selectOffset;
 
         [SerializeField]
@@ -41,6 +44,7 @@ namespace Gazeus.DesafioMatch3.Data
 
         public string TitleKey => _titleKey;
         public string InstructionKey => _instructionKey;
+        public Sprite IllustrationSprite => _illustrationSprite;
         public Vector2Int SelectOffset => _selectOffset;
         public Vector2Int SwapOffset => _swapOffset;
 

@@ -12,7 +12,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
         private BoardState _board;
         private BoardState _workingBoard;
         private bool[] _matchedFlags;
-        private List<string> _colorTypeIds;
+        private List<string> _shapeTypeIds;
         private List<string> _noMatchTypesScratch;
         private List<Vector2Int> _matchedPositions;
         private List<int> _clearedRowsScratch;
@@ -54,14 +54,14 @@ namespace Gazeus.DesafioMatch3.Gameplay
             if (_tiles == null || !_tiles.IsConfigured)
             {
                 Debug.LogError(
-                    "Assign tile definitions with color prefabs, joker, bomb, and skull prefabs.");
+                    "Assign tile definitions with shape prefabs, joker, bomb, and skull prefabs.");
                 return false;
             }
 
-            _colorTypeIds = BuildColorTypeIds(difficulty.TileIds, _tiles);
-            if (_colorTypeIds.Count == 0)
+            _shapeTypeIds = BuildShapeTypeIds(difficulty.TileIds, _tiles);
+            if (_shapeTypeIds.Count == 0)
             {
-                Debug.LogError($"Difficulty '{difficulty.Id}' has no valid color tile ids.");
+                Debug.LogError($"Difficulty '{difficulty.Id}' has no valid shape tile ids.");
                 return false;
             }
 
@@ -220,7 +220,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
                     for (int x = 0; x < _board.Width; x++)
                     {
                         Vector2Int cell = BoardCell.At(x, y);
-                        string typeId = PickSafeColorType(_board, x, y);
+                        string typeId = PickSafeShapeType(_board, x, y);
                         _board.Set(cell, _tileCount++, typeId);
                     }
                 }
@@ -303,7 +303,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
                         continue;
                     }
 
-                    string typeId = PickSafeColorType(_board, x, y);
+                    string typeId = PickSafeShapeType(_board, x, y);
                     _board.Set(cell, _tileCount++, typeId);
                 }
             }
@@ -515,7 +515,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
         {
             if (IsTutorialMode)
             {
-                return PickSafeColorType(board, x, y);
+                return PickSafeShapeType(board, x, y);
             }
 
             string specialTypeId = RollSpecialTypeId();
@@ -524,7 +524,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
                 return specialTypeId;
             }
 
-            return PickSafeColorType(board, x, y);
+            return PickSafeShapeType(board, x, y);
         }
 
         private string RollSpecialTypeId()
@@ -568,12 +568,12 @@ namespace Gazeus.DesafioMatch3.Gameplay
             return createsMatch;
         }
 
-        private string PickSafeColorType(BoardState board, int x, int y)
+        private string PickSafeShapeType(BoardState board, int x, int y)
         {
             _noMatchTypesScratch.Clear();
-            for (int i = 0; i < _colorTypeIds.Count; i++)
+            for (int i = 0; i < _shapeTypeIds.Count; i++)
             {
-                _noMatchTypesScratch.Add(_colorTypeIds[i]);
+                _noMatchTypesScratch.Add(_shapeTypeIds[i]);
             }
 
             if (x > 1 &&
@@ -590,7 +590,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
 
             if (_noMatchTypesScratch.Count == 0)
             {
-                return _colorTypeIds[Random.Range(0, _colorTypeIds.Count)];
+                return _shapeTypeIds[Random.Range(0, _shapeTypeIds.Count)];
             }
 
             for (int attempt = 0; attempt < _noMatchTypesScratch.Count; attempt++)
@@ -604,10 +604,10 @@ namespace Gazeus.DesafioMatch3.Gameplay
                 _noMatchTypesScratch.Remove(candidate);
             }
 
-            return _colorTypeIds[Random.Range(0, _colorTypeIds.Count)];
+            return _shapeTypeIds[Random.Range(0, _shapeTypeIds.Count)];
         }
 
-        private static List<string> BuildColorTypeIds(string[] tileIds, TileDefinitions tiles)
+        private static List<string> BuildShapeTypeIds(string[] tileIds, TileDefinitions tiles)
         {
             List<string> types = new(tileIds?.Length ?? 0);
 
@@ -619,7 +619,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
             for (int i = 0; i < tileIds.Length; i++)
             {
                 string tileId = tileIds[i];
-                if (!string.IsNullOrEmpty(tileId) && tiles.IsColor(tileId) && !types.Contains(tileId))
+                if (!string.IsNullOrEmpty(tileId) && tiles.IsShape(tileId) && !types.Contains(tileId))
                 {
                     types.Add(tileId);
                 }
@@ -643,7 +643,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
             _clearedColumnsScratch = new List<int>();
             _movedTilesList = new List<MovedTileInfo>(width * height);
             _addedTilesList = new List<AddedTileInfo>(width * height);
-            _noMatchTypesScratch = new List<string>(_colorTypeIds?.Count ?? 4);
+            _noMatchTypesScratch = new List<string>(_shapeTypeIds?.Count ?? 4);
         }
 
         private bool HasImmediateMatches(BoardState board)

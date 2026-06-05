@@ -10,34 +10,56 @@ namespace Gazeus.DesafioMatch3.UI.Views
 
         public Tween AnimatedSetTile(GameObject tile)
         {
+            if (tile == null)
+            {
+                return DOTween.Sequence().AppendInterval(0.01f);
+            }
+
             RectTransform tileRect = (RectTransform)tile.transform;
             RectTransform spotRect = (RectTransform)transform;
 
-            tileRect.SetParent(spotRect, true);
             DOTween.Kill(tileRect);
 
-            return DOTween.To(
-                () => tileRect.anchoredPosition,
-                value => tileRect.anchoredPosition = value,
-                Vector2.zero,
-                SettingsService.ScaleDuration(MoveDuration))
+            Vector3 startWorldPosition = tileRect.position;
+            tileRect.SetParent(spotRect, true);
+            tileRect.position = startWorldPosition;
+
+            Vector3 targetWorldPosition = spotRect.TransformPoint(spotRect.rect.center);
+            float duration = SettingsService.ScaleDuration(MoveDuration);
+
+            return tileRect
+                .DOMove(targetWorldPosition, duration)
                 .SetTarget(tileRect)
-                .SetLink(gameObject, LinkBehaviour.KillOnDestroy);
+                .SetLink(gameObject, LinkBehaviour.KillOnDestroy)
+                .OnComplete(() => SnapTile(tile));
         }
 
         public void SetTile(GameObject tile)
         {
             SnapTile(tile);
-            tile.transform.localScale = Vector3.one;
+            if (tile != null)
+            {
+                tile.transform.localScale = Vector3.one;
+            }
         }
 
         public void SnapTile(GameObject tile)
         {
+            if (tile == null)
+            {
+                return;
+            }
+
             RectTransform tileRect = (RectTransform)tile.transform;
             DOTween.Kill(tileRect);
 
             tileRect.SetParent((RectTransform)transform, false);
+            tileRect.anchorMin = Vector2.zero;
+            tileRect.anchorMax = Vector2.one;
+            tileRect.offsetMin = Vector2.zero;
+            tileRect.offsetMax = Vector2.zero;
             tileRect.anchoredPosition = Vector2.zero;
+            tileRect.localScale = Vector3.one;
         }
     }
 }

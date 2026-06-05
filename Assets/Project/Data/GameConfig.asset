@@ -15,14 +15,14 @@ MonoBehaviour:
   _boardWidth: 10
   _boardHeight: 10
   _tiles:
-    _colorTileIds:
-    - blue
-    - green
-    - orange
-    - yellow
-    - pink
-    - purple
-    - red
+    _shapeTileIds:
+    - circle
+    - square
+    - pentagon
+    - hexagon
+    - triangle
+    - diamond
+    - star
     _jokerId: joker
     _bombId: bomb
     _skullId: skull
@@ -30,28 +30,28 @@ MonoBehaviour:
   - _id: easy
     _startingTimeSeconds: 90
     _tileIds:
-    - blue
-    - green
-    - orange
-    - yellow
+    - circle
+    - square
+    - pentagon
+    - hexagon
   - _id: normal
     _startingTimeSeconds: 60
     _tileIds:
-    - blue
-    - green
-    - orange
-    - yellow
-    - pink
+    - circle
+    - square
+    - pentagon
+    - hexagon
+    - triangle
   - _id: hard
     _startingTimeSeconds: 45
     _tileIds:
-    - blue
-    - green
-    - orange
-    - yellow
-    - pink
-    - purple
-    - red
+    - circle
+    - square
+    - pentagon
+    - hexagon
+    - triangle
+    - diamond
+    - star
   _timeBonusPerValidSwap: 2
   _delayBeforeCountdown: 0
   _countdownLength: 3
