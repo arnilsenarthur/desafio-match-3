@@ -7,13 +7,13 @@ namespace Gazeus.DesafioMatch3.Gameplay
     internal sealed class GameState
     {
         private readonly GameConfig _config;
-        private TileTypeRegistry _tileRegistry;
+        private TileDefinitions _tiles;
 
         private BoardState _board;
         private BoardState _workingBoard;
         private bool[] _matchedFlags;
-        private List<int> _colorTypeIds;
-        private List<int> _noMatchTypesScratch;
+        private List<string> _colorTypeIds;
+        private List<string> _noMatchTypesScratch;
         private List<Vector2Int> _matchedPositions;
         private List<int> _clearedRowsScratch;
         private List<int> _clearedColumnsScratch;
@@ -50,18 +50,24 @@ namespace Gazeus.DesafioMatch3.Gameplay
             Score = 0;
             _lastDisplayedTimeSeconds = -1;
 
-            _tileRegistry = _config.TileTypeRegistry;
-            if (_tileRegistry == null || !_tileRegistry.IsConfigured)
+            _tiles = _config.Tiles;
+            if (_tiles == null || !_tiles.IsConfigured)
             {
                 Debug.LogError(
-                    "Assign a Tile Type Registry with color prefabs, joker, bomb, and skull prefabs.");
+                    "Assign tile definitions with color prefabs, joker, bomb, and skull prefabs.");
                 return false;
             }
 
-            int colorTypeCount = Mathf.Clamp(difficulty.TileTypeCount, 1, _tileRegistry.ColorCount);
+            _colorTypeIds = BuildColorTypeIds(difficulty.TileIds, _tiles);
+            if (_colorTypeIds.Count == 0)
+            {
+                Debug.LogError($"Difficulty '{difficulty.Id}' has no valid color tile ids.");
+                return false;
+            }
+
             TimeRemaining = difficulty.StartingTimeSeconds;
 
-            InitializeBoard(_config.BoardWidth, _config.BoardHeight, colorTypeCount);
+            InitializeBoard(_config.BoardWidth, _config.BoardHeight);
             RaiseTimeIfDisplayChanged(force: true);
 
             GameService.NotifyGameStarted(new GameStartedEventArgs(
@@ -193,7 +199,8 @@ namespace Gazeus.DesafioMatch3.Gameplay
 
         public bool IsTutorialSwapValid(Vector2Int from, Vector2Int to)
         {
-            if (!IsTutorialMode || !_activeTutorialStep.MatchesExpectedSwap(from, to))
+            if (!IsTutorialMode ||
+                !_activeTutorialStep.MatchesExpectedSwap(from, to, _board.Width, _board.Height))
             {
                 return false;
             }
@@ -213,8 +220,8 @@ namespace Gazeus.DesafioMatch3.Gameplay
                     for (int x = 0; x < _board.Width; x++)
                     {
                         Vector2Int cell = BoardCell.At(x, y);
-                        int type = PickSafeColorType(_board, x, y);
-                        _board.Set(cell, _tileCount++, type);
+                        string typeId = PickSafeColorType(_board, x, y);
+                        _board.Set(cell, _tileCount++, typeId);
                     }
                 }
 
@@ -247,7 +254,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
             if (!boardReady)
             {
                 Debug.LogWarning(
-                    $"Tutorial step '{step.Title}' could not build a valid board after {maxAttempts} attempts.");
+                    $"Tutorial step '{step.name}' could not build a valid board after {maxAttempts} attempts.");
             }
 
             _workingBoard.CopyFrom(_board);
@@ -260,12 +267,15 @@ namespace Gazeus.DesafioMatch3.Gameplay
                 return false;
             }
 
-            if (!BoardCell.AreAdjacent(step.SelectCell, step.SwapTargetCell))
+            Vector2Int selectCell = step.ResolveSelectCell(_board.Width, _board.Height);
+            Vector2Int swapTargetCell = step.ResolveSwapTargetCell(_board.Width, _board.Height);
+
+            if (!BoardCell.AreAdjacent(selectCell, swapTargetCell))
             {
                 return false;
             }
 
-            return WouldCreateMatchAfterSwap(_board, step.SelectCell, step.SwapTargetCell);
+            return WouldCreateMatchAfterSwap(_board, selectCell, swapTargetCell);
         }
 
         private void BuildTutorialStepBoard(TutorialStepDefinition step)
@@ -293,19 +303,26 @@ namespace Gazeus.DesafioMatch3.Gameplay
                         continue;
                     }
 
-                    int type = PickSafeColorType(_board, x, y);
-                    _board.Set(cell, _tileCount++, type);
+                    string typeId = PickSafeColorType(_board, x, y);
+                    _board.Set(cell, _tileCount++, typeId);
                 }
             }
         }
 
-        private static HashSet<Vector2Int> GetScriptedCells(TutorialStepDefinition step)
+        private HashSet<Vector2Int> GetScriptedCells(TutorialStepDefinition step)
         {
-            HashSet<Vector2Int> cells = new() { step.SelectCell, step.SwapTargetCell };
-            (Vector2Int cell, int type)[] scripted = step.Cells;
-            for (int i = 0; i < scripted.Length; i++)
+            HashSet<Vector2Int> cells = new()
             {
-                cells.Add(scripted[i].cell);
+                step.ResolveSelectCell(_board.Width, _board.Height),
+                step.ResolveSwapTargetCell(_board.Width, _board.Height),
+            };
+
+            var resolvedCells = new List<(Vector2Int cell, string typeId)>();
+            step.ResolveCells(_board.Width, _board.Height, resolvedCells);
+
+            for (int i = 0; i < resolvedCells.Count; i++)
+            {
+                cells.Add(resolvedCells[i].cell);
             }
 
             return cells;
@@ -315,11 +332,13 @@ namespace Gazeus.DesafioMatch3.Gameplay
 
         private void ApplyStepCells(TutorialStepDefinition step)
         {
-            (Vector2Int cell, int type)[] cells = step.Cells;
-            for (int i = 0; i < cells.Length; i++)
+            var cells = new List<(Vector2Int cell, string typeId)>();
+            step.ResolveCells(_board.Width, _board.Height, cells);
+
+            for (int i = 0; i < cells.Count; i++)
             {
-                (Vector2Int cell, int type) entry = cells[i];
-                _board.Set(entry.cell, _tileCount++, entry.type);
+                (Vector2Int cell, string typeId) entry = cells[i];
+                _board.Set(entry.cell, _tileCount++, entry.typeId);
             }
         }
 
@@ -341,14 +360,13 @@ namespace Gazeus.DesafioMatch3.Gameplay
             bool[] flags = new bool[board.Width * board.Height];
             List<int> rows = new();
             List<int> columns = new();
-            bool valid = TileMatching.FindAndMarkMatches(board, _tileRegistry, flags, rows, columns);
+            bool valid = TileMatching.FindAndMarkMatches(board, _tiles, flags, rows, columns);
             board.Swap(from, to);
             return valid;
         }
 
-        private void InitializeBoard(int boardWidth, int boardHeight, int tileTypeCount)
+        private void InitializeBoard(int boardWidth, int boardHeight)
         {
-            _colorTypeIds = BuildColorTypeIds(tileTypeCount);
             EnsureBoards(boardWidth, boardHeight);
             RegenerateBoard();
         }
@@ -385,7 +403,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
 
             while (hasMatches)
             {
-                int skullsCleared = TileMatching.CountSkullsInMatches(_workingBoard, _tileRegistry, _matchedFlags);
+                int skullsCleared = TileMatching.CountSkullsInMatches(_workingBoard, _tiles, _matchedFlags);
                 float skullPenalty = skullsCleared * _config.SkullTimePenaltySeconds;
 
                 if (skullPenalty > 0f)
@@ -415,15 +433,15 @@ namespace Gazeus.DesafioMatch3.Gameplay
                 {
                     for (int x = _workingBoard.Width - 1; x > -1; x--)
                     {
-                        if (_workingBoard.GetType(x, y) != -1)
+                        if (!_tiles.IsEmpty(_workingBoard.GetType(x, y)))
                         {
                             continue;
                         }
 
-                        int spawnType = PickSpawnType(_workingBoard, x, y);
+                        string spawnTypeId = PickSpawnType(_workingBoard, x, y);
                         int id = _tileCount++;
-                        _workingBoard.Set(x, y, id, spawnType);
-                        _addedTilesList.Add(new AddedTileInfo(new Vector2Int(x, y), spawnType));
+                        _workingBoard.Set(x, y, id, spawnTypeId);
+                        _addedTilesList.Add(new AddedTileInfo(new Vector2Int(x, y), spawnTypeId));
                     }
                 }
 
@@ -456,7 +474,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
                 return new List<BoardSequence>();
             }
 
-            int skullsCleared = TileMatching.CountSkullsInMatches(_workingBoard, _tileRegistry, _matchedFlags);
+            int skullsCleared = TileMatching.CountSkullsInMatches(_workingBoard, _tiles, _matchedFlags);
             float skullPenalty = skullsCleared * _config.SkullTimePenaltySeconds;
             if (skullPenalty > 0f)
             {
@@ -493,50 +511,50 @@ namespace Gazeus.DesafioMatch3.Gameplay
             return new List<BoardSequence> { sequence };
         }
 
-        private int PickSpawnType(BoardState board, int x, int y)
+        private string PickSpawnType(BoardState board, int x, int y)
         {
             if (IsTutorialMode)
             {
                 return PickSafeColorType(board, x, y);
             }
 
-            int specialType = RollSpecialTypeId();
-            if (specialType >= 0 && !WouldCreateImmediateMatch(board, x, y, specialType))
+            string specialTypeId = RollSpecialTypeId();
+            if (!string.IsNullOrEmpty(specialTypeId) && !WouldCreateImmediateMatch(board, x, y, specialTypeId))
             {
-                return specialType;
+                return specialTypeId;
             }
 
             return PickSafeColorType(board, x, y);
         }
 
-        private int RollSpecialTypeId()
+        private string RollSpecialTypeId()
         {
             if (Random.value < _config.SkullSpawnChance)
             {
-                return _tileRegistry.SkullTypeId;
+                return _tiles.SkullId;
             }
 
             if (Random.value < _config.BombJokerSpawnChance)
             {
-                return _tileRegistry.BombTypeId;
+                return _tiles.BombId;
             }
 
             if (Random.value < _config.JokerSpawnChance)
             {
-                return _tileRegistry.JokerTypeId;
+                return _tiles.JokerId;
             }
 
-            return -1;
+            return null;
         }
 
-        private bool WouldCreateImmediateMatch(BoardState board, int x, int y, int type)
+        private bool WouldCreateImmediateMatch(BoardState board, int x, int y, string typeId)
         {
-            bool wasEmpty = board.GetType(x, y) < 0;
+            bool wasEmpty = _tiles.IsEmpty(board.GetType(x, y));
             int savedId = board.GetId(x, y);
-            int savedType = board.GetType(x, y);
+            string savedTypeId = board.GetType(x, y);
 
-            board.Set(x, y, wasEmpty ? 0 : savedId, type);
-            bool createsMatch = TileMatching.CreatesMatchAt(board, _tileRegistry, x, y);
+            board.Set(x, y, wasEmpty ? 0 : savedId, typeId);
+            bool createsMatch = TileMatching.CreatesMatchAt(board, _tiles, x, y);
 
             if (wasEmpty)
             {
@@ -544,13 +562,13 @@ namespace Gazeus.DesafioMatch3.Gameplay
             }
             else
             {
-                board.Set(x, y, savedId, savedType);
+                board.Set(x, y, savedId, savedTypeId);
             }
 
             return createsMatch;
         }
 
-        private int PickSafeColorType(BoardState board, int x, int y)
+        private string PickSafeColorType(BoardState board, int x, int y)
         {
             _noMatchTypesScratch.Clear();
             for (int i = 0; i < _colorTypeIds.Count; i++)
@@ -577,7 +595,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
 
             for (int attempt = 0; attempt < _noMatchTypesScratch.Count; attempt++)
             {
-                int candidate = _noMatchTypesScratch[Random.Range(0, _noMatchTypesScratch.Count)];
+                string candidate = _noMatchTypesScratch[Random.Range(0, _noMatchTypesScratch.Count)];
                 if (!WouldCreateImmediateMatch(board, x, y, candidate))
                 {
                     return candidate;
@@ -589,12 +607,22 @@ namespace Gazeus.DesafioMatch3.Gameplay
             return _colorTypeIds[Random.Range(0, _colorTypeIds.Count)];
         }
 
-        private static List<int> BuildColorTypeIds(int colorTypeCount)
+        private static List<string> BuildColorTypeIds(string[] tileIds, TileDefinitions tiles)
         {
-            List<int> types = new(colorTypeCount);
-            for (int i = 0; i < colorTypeCount; i++)
+            List<string> types = new(tileIds?.Length ?? 0);
+
+            if (tileIds == null)
             {
-                types.Add(i);
+                return types;
+            }
+
+            for (int i = 0; i < tileIds.Length; i++)
+            {
+                string tileId = tileIds[i];
+                if (!string.IsNullOrEmpty(tileId) && tiles.IsColor(tileId) && !types.Contains(tileId))
+                {
+                    types.Add(tileId);
+                }
             }
 
             return types;
@@ -615,7 +643,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
             _clearedColumnsScratch = new List<int>();
             _movedTilesList = new List<MovedTileInfo>(width * height);
             _addedTilesList = new List<AddedTileInfo>(width * height);
-            _noMatchTypesScratch = new List<int>(_colorTypeIds?.Count ?? 4);
+            _noMatchTypesScratch = new List<string>(_colorTypeIds?.Count ?? 4);
         }
 
         private bool HasImmediateMatches(BoardState board)
@@ -632,14 +660,14 @@ namespace Gazeus.DesafioMatch3.Gameplay
             List<int> clearedRows,
             List<int> clearedColumns)
         {
-            if (!TileMatching.FindAndMarkMatches(board, _tileRegistry, matchedFlags, clearedRows, clearedColumns))
+            if (!TileMatching.FindAndMarkMatches(board, _tiles, matchedFlags, clearedRows, clearedColumns))
             {
                 return false;
             }
 
             TileMatching.PropagateBombClears(
                 board,
-                _tileRegistry,
+                _tiles,
                 matchedFlags,
                 clearedRows,
                 clearedColumns);
@@ -656,8 +684,8 @@ namespace Gazeus.DesafioMatch3.Gameplay
                 int writeY = 0;
                 for (int readY = 0; readY < board.Height; readY++)
                 {
-                    int type = board.GetType(x, readY);
-                    if (type < 0)
+                    string typeId = board.GetType(x, readY);
+                    if (_tiles.IsEmpty(typeId))
                     {
                         continue;
                     }
@@ -666,7 +694,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
 
                     if (readY != writeY)
                     {
-                        board.Set(x, writeY, id, type);
+                        board.Set(x, writeY, id, typeId);
                         board.Clear(x, readY);
 
                         if (_movedTilesById.TryGetValue(id, out MovedTileInfo movedTileInfo))
@@ -703,8 +731,8 @@ namespace Gazeus.DesafioMatch3.Gameplay
             {
                 for (int x = 0; x < board.Width; x++)
                 {
-                    int type = PickSpawnType(board, x, y);
-                    board.Set(x, y, _tileCount++, type);
+                    string typeId = PickSpawnType(board, x, y);
+                    board.Set(x, y, _tileCount++, typeId);
                 }
             }
         }

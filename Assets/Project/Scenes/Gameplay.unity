@@ -290,6 +290,7 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 429446101}
+  - {fileID: 429446201}
   m_Father: {fileID: 2066385620}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -308,9 +309,10 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 798450fb7fe04d348a5c6925c8045d26, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: 
+  m_EditorClassIdentifier: DesafioMatch3::Gazeus.DesafioMatch3.UI.Views.BoardView
   _tileSpotPrefab: {fileID: -4864831497923239132, guid: 6527630aaec5689489d14bfbb482fd0f, type: 3}
   _tutorialHints: {fileID: 429446102}
+  _tilePool: {fileID: 429446202}
 --- !u!114 &429446044
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -374,7 +376,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e06d28f52fe79f0449e88393fbeefc34, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: DesafioMatch3::Gazeus.DesafioMatch3.FlexibleGridLayout
+  m_EditorClassIdentifier: DesafioMatch3::Gazeus.DesafioMatch3.UI.Views.FlexibleGridLayout
   m_Padding:
     m_Left: 0
     m_Right: 0
@@ -384,6 +386,98 @@ MonoBehaviour:
   _rows: 10
   _columns: 10
   _spacing: {x: 0, y: 0}
+--- !u!1 &429446200
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 429446201}
+  - component: {fileID: 429446203}
+  - component: {fileID: 429446202}
+  m_Layer: 5
+  m_Name: TilePool
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &429446201
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 429446200}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 429446042}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: 0, z: 0}
+  m_SizeDelta: {x: 0, y: 0}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &429446202
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 429446200}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 560500369e8a7f0408ce3b48275b03f0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: DesafioMatch3::Gazeus.DesafioMatch3.UI.Views.TilePool
+  _prefabs:
+    _keys:
+    - blue
+    - green
+    - orange
+    - yellow
+    - pink
+    - purple
+    - red
+    - joker
+    - bomb
+    - skull
+    _values:
+    - {fileID: 6588062894895293356, guid: a6fb14bf42a1f2d46ab2f40ba89df970, type: 3}
+    - {fileID: 3289974818467498821, guid: e79087baeae77814fb7d024ccc13c2a6, type: 3}
+    - {fileID: 4679404501436794767, guid: dc3453aa1a3bbbd46aa72555404acfd6, type: 3}
+    - {fileID: 8131021523737363015, guid: 46f0c7ed21cef764296d7c156b96da85, type: 3}
+    - {fileID: 8811796958392367493, guid: dbb3cd93728abaa43a394a4320380812, type: 3}
+    - {fileID: 3248726331797900192, guid: 90b6f1c7b50730c47ba7294b1f2bbbd4, type: 3}
+    - {fileID: 5683098699188789233, guid: 21d43d9bcb34c784aba98010c0ad6084, type: 3}
+    - {fileID: 6588062894895293356, guid: 68b005333f0e49f39af2d867ff292711, type: 3}
+    - {fileID: 6588062894895293356, guid: 4baf1b64d0514bd3ae6789d2e49fb74f, type: 3}
+    - {fileID: 6588062894895293356, guid: ad6453d086414cbba9fcf35db581da63, type: 3}
+--- !u!114 &429446203
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 429446200}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 306cc8c2b49d7114eaa3623786fc2126, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.LayoutElement
+  m_IgnoreLayout: 1
+  m_MinWidth: -1
+  m_MinHeight: -1
+  m_PreferredWidth: -1
+  m_PreferredHeight: -1
+  m_FlexibleWidth: -1
+  m_FlexibleHeight: -1
+  m_LayoutPriority: 1
 --- !u!1 &429446100
 GameObject:
   m_ObjectHideFlags: 0

@@ -13,7 +13,7 @@ namespace Gazeus.DesafioMatch3.UI.Views
 
         private GameObject[] _tiles;
         private TileSpotView[] _tileSpots;
-        private TileObjectPool _tilePool;
+        private TilePool _tilePool;
         private int _width;
         private GameObject _linkTarget;
         private Func<int, float> _getTargetScale;
@@ -21,7 +21,7 @@ namespace Gazeus.DesafioMatch3.UI.Views
         public void Bind(
             GameObject[] tiles,
             TileSpotView[] tileSpots,
-            TileObjectPool tilePool,
+            TilePool tilePool,
             int width,
             GameObject linkTarget,
             Func<int, float> getTargetScale)
@@ -52,7 +52,7 @@ namespace Gazeus.DesafioMatch3.UI.Views
                 Vector2Int position = addedTileInfo.Position;
                 int index = ToIndex(position.x, position.y);
 
-                GameObject tile = _tilePool.Get(addedTileInfo.Type);
+                GameObject tile = _tilePool.GetObject(addedTileInfo.TypeId);
                 _tileSpots[index].SetTile(tile);
                 _tiles[index] = tile;
 
@@ -80,7 +80,7 @@ namespace Gazeus.DesafioMatch3.UI.Views
                 }
 
                 sequence.Join(tile.transform.DOScale(0f, SettingsService.ScaleDuration(TilePopDuration))
-                    .OnComplete(() => _tilePool.Release(tile)));
+                    .OnComplete(() => _tilePool.ReleaseObject(tile)));
             }
 
             if (matchedPosition.Count == 0)

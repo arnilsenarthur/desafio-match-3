@@ -5,12 +5,12 @@ namespace Gazeus.DesafioMatch3.Gameplay
     public readonly struct AddedTileInfo
     {
         public Vector2Int Position { get; }
-        public int Type { get; }
+        public string TypeId { get; }
 
-        public AddedTileInfo(Vector2Int position, int type)
+        public AddedTileInfo(Vector2Int position, string typeId)
         {
             Position = position;
-            Type = type;
+            TypeId = typeId;
         }
     }
 }

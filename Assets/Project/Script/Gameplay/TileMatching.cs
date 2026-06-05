@@ -8,7 +8,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
     {
         public static bool FindAndMarkMatches(
             BoardState board,
-            TileTypeRegistry registry,
+            TileDefinitions tiles,
             bool[] matchedFlags,
             List<int> clearedRows,
             List<int> clearedColumns)
@@ -22,12 +22,12 @@ namespace Gazeus.DesafioMatch3.Gameplay
             clearedRows.Clear();
             clearedColumns.Clear();
 
-            ScanColorRuns(board, registry, matchedFlags, clearedRows, clearedColumns, horizontal: true);
-            ScanColorRuns(board, registry, matchedFlags, clearedRows, clearedColumns, horizontal: false);
-            ScanSkullRuns(board, registry, matchedFlags, horizontal: true);
-            ScanSkullRuns(board, registry, matchedFlags, horizontal: false);
+            ScanColorRuns(board, tiles, matchedFlags, clearedRows, clearedColumns, horizontal: true);
+            ScanColorRuns(board, tiles, matchedFlags, clearedRows, clearedColumns, horizontal: false);
+            ScanSkullRuns(board, tiles, matchedFlags, horizontal: true);
+            ScanSkullRuns(board, tiles, matchedFlags, horizontal: false);
 
-            ApplyLineClears(board, matchedFlags, clearedRows, clearedColumns);
+            ApplyLineClears(board, tiles, matchedFlags, clearedRows, clearedColumns);
 
             for (int i = 0; i < cellCount; i++)
             {
@@ -40,7 +40,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
             return false;
         }
 
-        public static int CountSkullsInMatches(BoardState board, TileTypeRegistry registry, bool[] matchedFlags)
+        public static int CountSkullsInMatches(BoardState board, TileDefinitions tiles, bool[] matchedFlags)
         {
             int count = 0;
 
@@ -53,7 +53,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
                         continue;
                     }
 
-                    if (registry.IsSkull(board.GetType(x, y)))
+                    if (tiles.IsSkull(board.GetType(x, y)))
                     {
                         count++;
                     }
@@ -63,22 +63,22 @@ namespace Gazeus.DesafioMatch3.Gameplay
             return count;
         }
 
-        public static bool CreatesMatchAt(BoardState board, TileTypeRegistry registry, int x, int y)
+        public static bool CreatesMatchAt(BoardState board, TileDefinitions tiles, int x, int y)
         {
-            if (board.GetType(x, y) < 0)
+            if (tiles.IsEmpty(board.GetType(x, y)))
             {
                 return false;
             }
 
-            return MeasureColorRunThroughCell(board, registry, x, y, 1, 0) >= 3 ||
-                   MeasureColorRunThroughCell(board, registry, x, y, 0, 1) >= 3 ||
-                   GetSkullRunLengthAt(board, registry, x, y, horizontal: true) >= 3 ||
-                   GetSkullRunLengthAt(board, registry, x, y, horizontal: false) >= 3;
+            return MeasureColorRunThroughCell(board, tiles, x, y, 1, 0) >= 3 ||
+                   MeasureColorRunThroughCell(board, tiles, x, y, 0, 1) >= 3 ||
+                   GetSkullRunLengthAt(board, tiles, x, y, horizontal: true) >= 3 ||
+                   GetSkullRunLengthAt(board, tiles, x, y, horizontal: false) >= 3;
         }
 
         public static void PropagateBombClears(
             BoardState board,
-            TileTypeRegistry registry,
+            TileDefinitions tiles,
             bool[] matchedFlags,
             List<int> clearedRows,
             List<int> clearedColumns)
@@ -98,18 +98,18 @@ namespace Gazeus.DesafioMatch3.Gameplay
                             continue;
                         }
 
-                        if (!registry.IsBomb(board.GetType(x, y)))
+                        if (!tiles.IsBomb(board.GetType(x, y)))
                         {
                             continue;
                         }
 
-                        if (MarkEntireRow(board, matchedFlags, y))
+                        if (MarkEntireRow(board, tiles, matchedFlags, y))
                         {
                             changed = true;
                             AddUnique(clearedRows, y);
                         }
 
-                        if (MarkEntireColumn(board, matchedFlags, x))
+                        if (MarkEntireColumn(board, tiles, matchedFlags, x))
                         {
                             changed = true;
                             AddUnique(clearedColumns, x);
@@ -119,21 +119,21 @@ namespace Gazeus.DesafioMatch3.Gameplay
             }
         }
 
-        public static bool FitsInColorRun(int cellType, int anchorColor, TileTypeRegistry registry)
+        public static bool FitsInColorRun(string cellType, string anchorColor, TileDefinitions tiles)
         {
-            if (registry.IsEmpty(cellType))
+            if (tiles.IsEmpty(cellType))
             {
                 return false;
             }
 
-            if (registry.IsSkull(cellType))
+            if (tiles.IsSkull(cellType))
             {
                 return false;
             }
 
-            if (anchorColor < 0)
+            if (string.IsNullOrEmpty(anchorColor))
             {
-                return registry.IsColor(cellType) || registry.IsJoker(cellType) || registry.IsBomb(cellType);
+                return tiles.IsColor(cellType) || tiles.IsJoker(cellType) || tiles.IsBomb(cellType);
             }
 
             if (cellType == anchorColor)
@@ -141,12 +141,12 @@ namespace Gazeus.DesafioMatch3.Gameplay
                 return true;
             }
 
-            return registry.IsJoker(cellType) || registry.IsBomb(cellType);
+            return tiles.IsJoker(cellType) || tiles.IsBomb(cellType);
         }
 
         private static void ScanColorRuns(
             BoardState board,
-            TileTypeRegistry registry,
+            TileDefinitions tiles,
             bool[] matchedFlags,
             List<int> clearedRows,
             List<int> clearedColumns,
@@ -156,21 +156,21 @@ namespace Gazeus.DesafioMatch3.Gameplay
             {
                 for (int y = 0; y < board.Height; y++)
                 {
-                    ScanColorLine(board, registry, matchedFlags, clearedRows, y, axisX: true);
+                    ScanColorLine(board, tiles, matchedFlags, clearedRows, y, axisX: true);
                 }
             }
             else
             {
                 for (int x = 0; x < board.Width; x++)
                 {
-                    ScanColorLine(board, registry, matchedFlags, clearedColumns, x, axisX: false);
+                    ScanColorLine(board, tiles, matchedFlags, clearedColumns, x, axisX: false);
                 }
             }
         }
 
         private static void ScanColorLine(
             BoardState board,
-            TileTypeRegistry registry,
+            TileDefinitions tiles,
             bool[] matchedFlags,
             List<int> lineClears,
             int fixedCoord,
@@ -183,16 +183,16 @@ namespace Gazeus.DesafioMatch3.Gameplay
             {
                 int x = axisX ? index : fixedCoord;
                 int y = axisX ? fixedCoord : index;
-                int type = board.GetType(x, y);
+                string type = board.GetType(x, y);
 
-                if (registry.IsEmpty(type) || registry.IsSkull(type))
+                if (tiles.IsEmpty(type) || tiles.IsSkull(type))
                 {
                     index++;
                     continue;
                 }
 
                 int start = index;
-                int anchorColor = registry.IsColor(type) ? type : -1;
+                string anchorColor = tiles.IsColor(type) ? type : null;
                 int stepX = axisX ? 1 : 0;
                 int stepY = axisX ? 0 : 1;
                 index++;
@@ -201,9 +201,9 @@ namespace Gazeus.DesafioMatch3.Gameplay
                 {
                     int nx = axisX ? index : fixedCoord;
                     int ny = axisX ? fixedCoord : index;
-                    int nextType = board.GetType(nx, ny);
+                    string nextType = board.GetType(nx, ny);
 
-                    if (!TryIncludeInColorRun(nextType, ref anchorColor, registry))
+                    if (!TryIncludeInColorRun(nextType, ref anchorColor, tiles))
                     {
                         break;
                     }
@@ -218,7 +218,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
                 int endY = axisX ? fixedCoord : index - 1;
 
                 if (runLength < 3 ||
-                    !IsValidColorRunSegment(board, registry, startX, startY, endX, endY, stepX, stepY))
+                    !IsValidColorRunSegment(board, tiles, startX, startY, endX, endY, stepX, stepY))
                 {
                     continue;
                 }
@@ -239,7 +239,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
 
         private static void ScanSkullRuns(
             BoardState board,
-            TileTypeRegistry registry,
+            TileDefinitions tiles,
             bool[] matchedFlags,
             bool horizontal)
         {
@@ -247,21 +247,21 @@ namespace Gazeus.DesafioMatch3.Gameplay
             {
                 for (int y = 0; y < board.Height; y++)
                 {
-                    ScanSkullLine(board, registry, matchedFlags, y, axisX: true);
+                    ScanSkullLine(board, tiles, matchedFlags, y, axisX: true);
                 }
             }
             else
             {
                 for (int x = 0; x < board.Width; x++)
                 {
-                    ScanSkullLine(board, registry, matchedFlags, x, axisX: false);
+                    ScanSkullLine(board, tiles, matchedFlags, x, axisX: false);
                 }
             }
         }
 
         private static void ScanSkullLine(
             BoardState board,
-            TileTypeRegistry registry,
+            TileDefinitions tiles,
             bool[] matchedFlags,
             int fixedCoord,
             bool axisX)
@@ -274,7 +274,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
                 int x = axisX ? index : fixedCoord;
                 int y = axisX ? fixedCoord : index;
 
-                if (!registry.IsSkull(board.GetType(x, y)))
+                if (!tiles.IsSkull(board.GetType(x, y)))
                 {
                     index++;
                     continue;
@@ -288,7 +288,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
                     int nx = axisX ? index : fixedCoord;
                     int ny = axisX ? fixedCoord : index;
 
-                    if (!registry.IsSkull(board.GetType(nx, ny)))
+                    if (!tiles.IsSkull(board.GetType(nx, ny)))
                     {
                         break;
                     }
@@ -313,12 +313,12 @@ namespace Gazeus.DesafioMatch3.Gameplay
 
         private static int GetSkullRunLengthAt(
             BoardState board,
-            TileTypeRegistry registry,
+            TileDefinitions tiles,
             int x,
             int y,
             bool horizontal)
         {
-            if (!registry.IsSkull(board.GetType(x, y)))
+            if (!tiles.IsSkull(board.GetType(x, y)))
             {
                 return 0;
             }
@@ -333,7 +333,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
                 int cx = horizontal ? index : fixedCoord;
                 int cy = horizontal ? fixedCoord : index;
 
-                if (!registry.IsSkull(board.GetType(cx, cy)))
+                if (!tiles.IsSkull(board.GetType(cx, cy)))
                 {
                     index++;
                     continue;
@@ -347,7 +347,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
                     int nx = horizontal ? index : fixedCoord;
                     int ny = horizontal ? fixedCoord : index;
 
-                    if (!registry.IsSkull(board.GetType(nx, ny)))
+                    if (!tiles.IsSkull(board.GetType(nx, ny)))
                     {
                         break;
                     }
@@ -366,26 +366,26 @@ namespace Gazeus.DesafioMatch3.Gameplay
 
         private static int MeasureColorRunThroughCell(
             BoardState board,
-            TileTypeRegistry registry,
+            TileDefinitions tiles,
             int x,
             int y,
             int stepX,
             int stepY)
         {
-            int centerType = board.GetType(x, y);
-            if (registry.IsEmpty(centerType) || registry.IsSkull(centerType))
+            string centerType = board.GetType(x, y);
+            if (tiles.IsEmpty(centerType) || tiles.IsSkull(centerType))
             {
                 return 0;
             }
 
-            if (!registry.IsColor(centerType) &&
-                !registry.IsJoker(centerType) &&
-                !registry.IsBomb(centerType))
+            if (!tiles.IsColor(centerType) &&
+                !tiles.IsJoker(centerType) &&
+                !tiles.IsBomb(centerType))
             {
                 return 0;
             }
 
-            int anchorColor = registry.IsColor(centerType) ? centerType : -1;
+            string anchorColor = tiles.IsColor(centerType) ? centerType : null;
             int startX = x;
             int startY = y;
             int endX = x;
@@ -395,8 +395,8 @@ namespace Gazeus.DesafioMatch3.Gameplay
             int cy = y - stepY;
             while (IsInside(board, cx, cy))
             {
-                int type = board.GetType(cx, cy);
-                if (!TryIncludeInColorRun(type, ref anchorColor, registry))
+                string type = board.GetType(cx, cy);
+                if (!TryIncludeInColorRun(type, ref anchorColor, tiles))
                 {
                     break;
                 }
@@ -411,8 +411,8 @@ namespace Gazeus.DesafioMatch3.Gameplay
             int fy = y + stepY;
             while (IsInside(board, fx, fy))
             {
-                int type = board.GetType(fx, fy);
-                if (!TryIncludeInColorRun(type, ref anchorColor, registry))
+                string type = board.GetType(fx, fy);
+                if (!TryIncludeInColorRun(type, ref anchorColor, tiles))
                 {
                     break;
                 }
@@ -429,21 +429,21 @@ namespace Gazeus.DesafioMatch3.Gameplay
                 return 0;
             }
 
-            return IsValidColorRunSegment(board, registry, startX, startY, endX, endY, stepX, stepY)
+            return IsValidColorRunSegment(board, tiles, startX, startY, endX, endY, stepX, stepY)
                 ? length
                 : 0;
         }
 
-        private static bool TryIncludeInColorRun(int type, ref int anchorColor, TileTypeRegistry registry)
+        private static bool TryIncludeInColorRun(string type, ref string anchorColor, TileDefinitions tiles)
         {
-            if (!FitsInColorRun(type, anchorColor, registry))
+            if (!FitsInColorRun(type, anchorColor, tiles))
             {
                 return false;
             }
 
-            if (registry.IsColor(type))
+            if (tiles.IsColor(type))
             {
-                if (anchorColor < 0)
+                if (string.IsNullOrEmpty(anchorColor))
                 {
                     anchorColor = type;
                 }
@@ -458,7 +458,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
 
         private static bool IsValidColorRunSegment(
             BoardState board,
-            TileTypeRegistry registry,
+            TileDefinitions tiles,
             int startX,
             int startY,
             int endX,
@@ -466,18 +466,18 @@ namespace Gazeus.DesafioMatch3.Gameplay
             int stepX,
             int stepY)
         {
-            int anchorColor = -1;
+            string anchorColor = null;
             int wildcardCount = 0;
             int x = startX;
             int y = startY;
 
             while (true)
             {
-                int type = board.GetType(x, y);
+                string type = board.GetType(x, y);
 
-                if (registry.IsColor(type))
+                if (tiles.IsColor(type))
                 {
-                    if (anchorColor < 0)
+                    if (string.IsNullOrEmpty(anchorColor))
                     {
                         anchorColor = type;
                     }
@@ -486,7 +486,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
                         return false;
                     }
                 }
-                else if (registry.IsJoker(type) || registry.IsBomb(type))
+                else if (tiles.IsJoker(type) || tiles.IsBomb(type))
                 {
                     wildcardCount++;
                 }
@@ -504,7 +504,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
                 y += stepY;
             }
 
-            return anchorColor >= 0 || wildcardCount >= 3;
+            return !string.IsNullOrEmpty(anchorColor) || wildcardCount >= 3;
         }
 
         private static int CountCellsBetween(int startX, int startY, int endX, int endY, int stepX, int stepY)
@@ -520,13 +520,13 @@ namespace Gazeus.DesafioMatch3.Gameplay
         private static bool IsInside(BoardState board, int x, int y) =>
             x >= 0 && y >= 0 && x < board.Width && y < board.Height;
 
-        private static bool MarkEntireRow(BoardState board, bool[] matchedFlags, int row)
+        private static bool MarkEntireRow(BoardState board, TileDefinitions tiles, bool[] matchedFlags, int row)
         {
             bool changed = false;
 
             for (int x = 0; x < board.Width; x++)
             {
-                if (board.GetType(x, row) >= 0 && !matchedFlags[board.ToIndex(x, row)])
+                if (!tiles.IsEmpty(board.GetType(x, row)) && !matchedFlags[board.ToIndex(x, row)])
                 {
                     matchedFlags[board.ToIndex(x, row)] = true;
                     changed = true;
@@ -536,13 +536,13 @@ namespace Gazeus.DesafioMatch3.Gameplay
             return changed;
         }
 
-        private static bool MarkEntireColumn(BoardState board, bool[] matchedFlags, int column)
+        private static bool MarkEntireColumn(BoardState board, TileDefinitions tiles, bool[] matchedFlags, int column)
         {
             bool changed = false;
 
             for (int y = 0; y < board.Height; y++)
             {
-                if (board.GetType(column, y) >= 0 && !matchedFlags[board.ToIndex(column, y)])
+                if (!tiles.IsEmpty(board.GetType(column, y)) && !matchedFlags[board.ToIndex(column, y)])
                 {
                     matchedFlags[board.ToIndex(column, y)] = true;
                     changed = true;
@@ -554,6 +554,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
 
         private static void ApplyLineClears(
             BoardState board,
+            TileDefinitions tiles,
             bool[] matchedFlags,
             List<int> clearedRows,
             List<int> clearedColumns)
@@ -563,7 +564,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
                 int row = clearedRows[i];
                 for (int x = 0; x < board.Width; x++)
                 {
-                    if (board.GetType(x, row) >= 0)
+                    if (!tiles.IsEmpty(board.GetType(x, row)))
                     {
                         MarkMatch(board, matchedFlags, x, row);
                     }
@@ -575,7 +576,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
                 int column = clearedColumns[i];
                 for (int y = 0; y < board.Height; y++)
                 {
-                    if (board.GetType(column, y) >= 0)
+                    if (!tiles.IsEmpty(board.GetType(column, y)))
                     {
                         MarkMatch(board, matchedFlags, column, y);
                     }

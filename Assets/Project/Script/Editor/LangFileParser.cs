@@ -1,19 +1,18 @@
 using System;
 using System.Collections.Generic;
-using Gazeus.DesafioMatch3.Localization;
 
 namespace Gazeus.DesafioMatch3.Editor
 {
     internal static class LangFileParser
     {
-        public static LangEntry[] Parse(string text)
+        public static KeyValuePair<string, string>[] Parse(string text)
         {
             if (string.IsNullOrEmpty(text))
             {
-                return Array.Empty<LangEntry>();
+                return Array.Empty<KeyValuePair<string, string>>();
             }
 
-            List<LangEntry> entries = new();
+            List<KeyValuePair<string, string>> entries = new();
             string[] lines = text.Split('\n');
 
             for (int i = 0; i < lines.Length; i++)
@@ -31,11 +30,9 @@ namespace Gazeus.DesafioMatch3.Editor
                     continue;
                 }
 
-                entries.Add(new LangEntry
-                {
-                    Key = line.Substring(0, separator).Trim(),
-                    Value = Unescape(line.Substring(separator + 1).Trim())
-                });
+                entries.Add(new KeyValuePair<string, string>(
+                    line.Substring(0, separator).Trim(),
+                    Unescape(line.Substring(separator + 1).Trim())));
             }
 
             return entries.ToArray();

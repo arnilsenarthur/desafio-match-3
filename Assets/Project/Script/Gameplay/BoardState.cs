@@ -14,7 +14,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
 
             for (int i = 0; i < _cells.Length; i++)
             {
-                _cells[i] = new Tile(-1, -1);
+                _cells[i] = new Tile(-1, null);
             }
         }
 
@@ -25,24 +25,24 @@ namespace Gazeus.DesafioMatch3.Gameplay
 
         public int ToIndex(Vector2Int cell) => ToIndex(cell.x, cell.y);
 
-        public int GetType(Vector2Int cell) => GetType(cell.x, cell.y);
+        public string GetType(Vector2Int cell) => GetType(cell.x, cell.y);
 
-        public int GetType(int x, int y) => _cells[ToIndex(x, y)].Type;
+        public string GetType(int x, int y) => _cells[ToIndex(x, y)].TypeId;
 
         public int GetId(Vector2Int cell) => GetId(cell.x, cell.y);
 
         public int GetId(int x, int y) => _cells[ToIndex(x, y)].Id;
 
-        public void Set(Vector2Int cell, int id, int type) => Set(cell.x, cell.y, id, type);
+        public void Set(Vector2Int cell, int id, string typeId) => Set(cell.x, cell.y, id, typeId);
 
-        public void Set(int x, int y, int id, int type)
+        public void Set(int x, int y, int id, string typeId)
         {
-            _cells[ToIndex(x, y)] = new Tile(id, type);
+            _cells[ToIndex(x, y)] = new Tile(id, typeId);
         }
 
         public void Clear(Vector2Int cell) => Clear(cell.x, cell.y);
 
-        public void Clear(int x, int y) => Set(x, y, -1, -1);
+        public void Clear(int x, int y) => Set(x, y, -1, null);
 
         public void CopyFrom(BoardState other)
         {

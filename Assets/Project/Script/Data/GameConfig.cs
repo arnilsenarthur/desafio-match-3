@@ -7,17 +7,20 @@ namespace Gazeus.DesafioMatch3.Data
     [CreateAssetMenu(fileName = "GameConfig", menuName = "Gameplay/Game Config")]
     public class GameConfig : ScriptableObject
     {
-        [Header("Board"), SerializeField]
+        [Header("Board")]
+        [SerializeField]
         private int _boardWidth = 10;
 
         [SerializeField]
         private int _boardHeight = 10;
 
-        [FormerlySerializedAs("_tilePrefabRepository")]
+        [Header("Tiles")]
+        [FormerlySerializedAs("_tileTypeRegistry")]
         [SerializeField]
-        private TileTypeRegistry _tileTypeRegistry;
+        private TileDefinitions _tiles = new();
 
-        [Header("Difficulties"), SerializeField]
+        [Header("Difficulties")]
+        [SerializeField]
         private GameDifficultySettings[] _difficulties =
         {
             new() { },
@@ -25,10 +28,12 @@ namespace Gazeus.DesafioMatch3.Data
             new() { }
         };
 
-        [Header("Timer"), SerializeField]
+        [Header("Timer")]
+        [SerializeField]
         private float _timeBonusPerValidSwap = 2f;
 
-        [Header("Countdown"), SerializeField]
+        [Header("Countdown")]
+        [SerializeField]
         private float _delayBeforeCountdown = 0f;
 
         [SerializeField]
@@ -40,7 +45,8 @@ namespace Gazeus.DesafioMatch3.Data
         [SerializeField]
         private float _goDisplayDuration = 0.5f;
 
-        [Header("Score"), SerializeField]
+        [Header("Score")]
+        [SerializeField]
         private int _scorePerPiece = 10;
 
         [SerializeField]
@@ -55,7 +61,7 @@ namespace Gazeus.DesafioMatch3.Data
         [SerializeField]
         private int _targetScore;
 
-        [Header("Special Tiles (spawn chance 0–1, initial board + refills)")]
+        [Header("Special Tiles (spawn chance 0–1)")]
         [Range(0f, 1f)]
         [SerializeField]
         private float _jokerSpawnChance = 0.03f;
@@ -71,12 +77,13 @@ namespace Gazeus.DesafioMatch3.Data
         [SerializeField]
         private float _skullTimePenaltySeconds = 5f;
 
-        [Header("Tutorial"), SerializeField]
-        private bool _showTutorialOnNextMatch = true;
+        [Header("Tutorial")]
+        [SerializeField]
+        private TutorialStepDefinition[] _tutorialSteps = Array.Empty<TutorialStepDefinition>();
 
         public int BoardWidth => _boardWidth;
         public int BoardHeight => _boardHeight;
-        public TileTypeRegistry TileTypeRegistry => _tileTypeRegistry;
+        public TileDefinitions Tiles => _tiles;
         public GameDifficultySettings[] Difficulties => _difficulties;
         public float TimeBonusPerValidSwap => _timeBonusPerValidSwap;
         public float DelayBeforeCountdown => Mathf.Max(0f, _delayBeforeCountdown);
@@ -93,7 +100,7 @@ namespace Gazeus.DesafioMatch3.Data
         public float BombJokerSpawnChance => Mathf.Clamp01(_bombJokerSpawnChance);
         public float SkullSpawnChance => Mathf.Clamp01(_skullSpawnChance);
         public float SkullTimePenaltySeconds => Mathf.Max(0f, _skullTimePenaltySeconds);
-        public bool ShowTutorialOnNextMatch => _showTutorialOnNextMatch;
+        public TutorialStepDefinition[] TutorialSteps => _tutorialSteps ?? Array.Empty<TutorialStepDefinition>();
 
         private void OnValidate()
         {

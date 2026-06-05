@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Gazeus.DesafioMatch3.Misc;
 using UnityEngine;
 
 namespace Gazeus.DesafioMatch3.Localization
@@ -7,34 +8,31 @@ namespace Gazeus.DesafioMatch3.Localization
     public class LangTableAsset : ScriptableObject
     {
         [SerializeField]
-        private LangEntry[] _entries = Array.Empty<LangEntry>();
+        private SerializableDictionary<string, string> _entries = new();
 
-        private Dictionary<string, string> _lookup;
-
-        public void SetEntries(LangEntry[] entries)
+        public void SetEntries(KeyValuePair<string, string>[] entries)
         {
-            _entries = entries ?? Array.Empty<LangEntry>();
-            _lookup = null;
-        }
+            _entries.Clear();
 
-        public bool TryGet(string key, out string value)
-        {
-            EnsureLookup();
-            return _lookup.TryGetValue(key, out value);
-        }
-
-        public IEnumerable<string> GetKeys()
-        {
-            EnsureLookup();
-            return _lookup.Keys;
-        }
-
-        private void EnsureLookup()
-        {
-            if (_lookup == null)
+            if (entries == null)
             {
-                _lookup = LangEntryLookup.Build(_entries);
+                return;
+            }
+
+            for (int i = 0; i < entries.Length; i++)
+            {
+                KeyValuePair<string, string> entry = entries[i];
+                if (string.IsNullOrEmpty(entry.Key))
+                {
+                    continue;
+                }
+
+                _entries.Set(entry.Key, entry.Value);
             }
         }
+
+        public bool TryGet(string key, out string value) => _entries.TryGetValue(key, out value);
+
+        public IEnumerable<string> GetKeys() => _entries.Keys;
     }
 }

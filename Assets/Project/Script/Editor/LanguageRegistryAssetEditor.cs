@@ -8,8 +8,7 @@ namespace Gazeus.DesafioMatch3.Editor
     [CustomEditor(typeof(LanguageRegistryAsset))]
     public class LanguageRegistryAssetEditor : UnityEditor.Editor
     {
-        private string _searchFilter = string.Empty;
-        private Vector2 _scroll;
+        private readonly SerializableDictionaryDrawer.State _entriesState = new();
 
         public override void OnInspectorGUI()
         {
@@ -20,7 +19,14 @@ namespace Gazeus.DesafioMatch3.Editor
 
             SerializedProperty entriesProperty = serializedObject.FindProperty("_entries");
             serializedObject.Update();
-            LangEntriesTableDrawer.Draw(entriesProperty, ref _searchFilter, ref _scroll);
+            SerializableDictionaryDrawer.Draw(
+                entriesProperty,
+                _entriesState,
+                new SerializableDictionaryDrawer.Options
+                {
+                    KeyColumnLabel = "Language Id",
+                    ValueColumnLabel = "Display Name",
+                });
             serializedObject.ApplyModifiedProperties();
         }
     }

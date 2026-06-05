@@ -3,7 +3,8 @@
     "rootNamespace": "Gazeus.DesafioMatch3.Editor",
     "references": [
         "DesafioMatch3",
-        "Unity.TextMeshPro"
+        "Unity.TextMeshPro",
+        "UnityEditor.EditorToolbarModule"
     ],
     "includePlatforms": [
         "Editor"

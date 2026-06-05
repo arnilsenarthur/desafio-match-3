@@ -37,8 +37,9 @@ namespace Gazeus.DesafioMatch3.UI.Views
         private int _height;
         private GameObject[] _tiles;
         private TileSpotView[] _tileSpots;
-        private TileObjectPool _tilePool;
-        private Transform _poolRoot;
+
+        [SerializeField]
+        private TilePool _tilePool;
         private RectTransform _boardRect;
         private bool _tutorialEventsBound;
         private int _hoverIndex = -1;
@@ -72,28 +73,27 @@ namespace Gazeus.DesafioMatch3.UI.Views
                 return false;
             }
 
-            Transform poolRoot = GetOrCreatePoolRoot();
-            if (poolRoot == null)
+            TilePool tilePool = GetOrCreateTilePool();
+            if (tilePool == null)
             {
-                Debug.LogError("BoardView could not create the tile pool root.", this);
+                Debug.LogError("BoardView could not create the tile pool.", this);
                 return false;
             }
 
-            TileTypeRegistry registry = config?.TileTypeRegistry;
-            if (registry == null || !registry.IsConfigured)
+            TileDefinitions tiles = config?.Tiles;
+            if (tiles == null || !tiles.IsConfigured)
             {
-                Debug.LogError("GameConfig Tile Type Registry is missing or not configured.", this);
+                Debug.LogError("GameConfig tile ids are missing or not configured.", this);
                 return false;
             }
 
-            GameObject[] prefabLookup = registry.GetPrefabLookupTable();
-            if (prefabLookup == null || prefabLookup.Length == 0)
+            if (!tilePool.HasPrefabs)
             {
-                Debug.LogError("Tile Type Registry prefab lookup table is empty.", this);
+                Debug.LogError("TilePool has no prefabs assigned. Configure them on the TilePool in the scene.", this);
                 return false;
             }
 
-            _tilePool = new TileObjectPool(prefabLookup, poolRoot);
+            _tilePool = tilePool;
 
             if (!_tutorialEventsBound)
             {
@@ -199,14 +199,14 @@ namespace Gazeus.DesafioMatch3.UI.Views
                 for (int x = 0; x < _width; x++)
                 {
                     int index = ToIndex(x, y);
-                    int type = board.GetType(x, y);
+                    string typeId = board.GetType(x, y);
                     GameObject currentTile = _tiles[index];
 
-                    if (type < 0)
+                    if (string.IsNullOrEmpty(typeId))
                     {
                         if (currentTile != null)
                         {
-                            _tilePool.Release(currentTile);
+                            _tilePool.ReleaseObject(currentTile);
                             _tiles[index] = null;
                         }
 
@@ -216,20 +216,20 @@ namespace Gazeus.DesafioMatch3.UI.Views
                     if (!forceRecreate && currentTile != null)
                     {
                         PooledTile pooled = currentTile.GetComponent<PooledTile>();
-                        if (pooled != null && pooled.TypeIndex == type)
+                        if (pooled != null && pooled.TypeId == typeId)
                         {
                             _tileSpots[index].SnapTile(currentTile);
                             continue;
                         }
 
-                        _tilePool.Release(currentTile);
+                        _tilePool.ReleaseObject(currentTile);
                     }
                     else if (currentTile != null)
                     {
-                        _tilePool.Release(currentTile);
+                        _tilePool.ReleaseObject(currentTile);
                     }
 
-                    GameObject tile = _tilePool.Get(type);
+                    GameObject tile = _tilePool.GetObject(typeId);
                     _tileSpots[index].SetTile(tile);
                     _tiles[index] = tile;
                 }
@@ -264,10 +264,10 @@ namespace Gazeus.DesafioMatch3.UI.Views
                     TileSpotView tileSpot = Instantiate(_tileSpotPrefab, _boardContainer.transform, false);
                     _tileSpots[index] = tileSpot;
 
-                    int tileTypeIndex = board.GetType(x, y);
-                    if (tileTypeIndex > -1)
+                    string tileTypeId = board.GetType(x, y);
+                    if (!string.IsNullOrEmpty(tileTypeId))
                     {
-                        GameObject tile = _tilePool.Get(tileTypeIndex);
+                        GameObject tile = _tilePool.GetObject(tileTypeId);
                         tileSpot.SetTile(tile);
                         _tiles[index] = tile;
                     }
@@ -288,7 +288,7 @@ namespace Gazeus.DesafioMatch3.UI.Views
                 {
                     if (_tiles[i] != null)
                     {
-                        _tilePool.Release(_tiles[i]);
+                        _tilePool.ReleaseObject(_tiles[i]);
                     }
                 }
             }
@@ -421,7 +421,7 @@ namespace Gazeus.DesafioMatch3.UI.Views
                 _layoutEventsSubscribed = true;
             }
 
-            GetOrCreatePoolRoot();
+            GetOrCreateTilePool();
 
             if (_tutorialHints == null)
             {
@@ -432,19 +432,19 @@ namespace Gazeus.DesafioMatch3.UI.Views
             _tutorialHints?.Hide();
         }
 
-        private Transform GetOrCreatePoolRoot()
+        private TilePool GetOrCreateTilePool()
         {
-            if (_poolRoot != null)
+            if (_tilePool != null)
             {
-                return _poolRoot;
+                return _tilePool;
             }
 
             const string poolName = TilePoolObjectName;
             Transform existing = transform.Find(poolName);
-            if (existing != null)
+            if (existing != null && existing.TryGetComponent(out TilePool existingPool))
             {
-                _poolRoot = existing;
-                return _poolRoot;
+                _tilePool = existingPool;
+                return _tilePool;
             }
 
             if (!this)
@@ -456,8 +456,8 @@ namespace Gazeus.DesafioMatch3.UI.Views
             poolObject.transform.SetParent(transform, false);
             poolObject.transform.localPosition = Vector3.zero;
             SetIgnoreLayout(poolObject);
-            _poolRoot = poolObject.transform;
-            return _poolRoot;
+            _tilePool = poolObject.AddComponent<TilePool>();
+            return _tilePool;
         }
 
         private void EnsureTutorialHintsSetup()

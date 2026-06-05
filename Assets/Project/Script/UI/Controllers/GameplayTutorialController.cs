@@ -67,14 +67,14 @@ namespace Gazeus.DesafioMatch3.UI.Controllers
                 return false;
             }
 
-            TileTypeRegistry registry = config.TileTypeRegistry;
-            if (registry == null || !registry.IsConfigured)
+            TutorialStepDefinition[] steps = config.TutorialSteps;
+            if (steps == null || steps.Length == 0)
             {
-                Debug.LogError("Tutorial cannot start: Tile Type Registry is missing or not configured.");
+                Debug.LogError("Tutorial cannot start: GameConfig has no tutorial steps assigned.");
                 return false;
             }
 
-            _steps = TutorialLayouts.BuildSteps(registry, config.BoardWidth, config.BoardHeight);
+            _steps = steps;
             _stepIndex = 0;
             _showingIntro = true;
             _waitingForStepComplete = false;
@@ -161,10 +161,20 @@ namespace Gazeus.DesafioMatch3.UI.Controllers
 
             TutorialStepDefinition step = _steps[_stepIndex];
             _gameController.ApplyTutorialStep(step);
-            _overlay.ShowPracticeStep(_stepIndex + 1, _steps.Length, step.Title, step.Instruction);
+            GameConfig config = Config;
+            int boardWidth = config != null ? config.BoardWidth : 0;
+            int boardHeight = config != null ? config.BoardHeight : 0;
+
+            _overlay.ShowPracticeStep(
+                _stepIndex + 1,
+                _steps.Length,
+                step.TitleKey,
+                step.InstructionKey);
             _gameController.SetInteractionLocked(false);
             _gameController.SetPaused(false);
-            _gameController.SetTutorialGuide(step.SelectCell, step.SwapTargetCell);
+            _gameController.SetTutorialGuide(
+                step.ResolveSelectCell(boardWidth, boardHeight),
+                step.ResolveSwapTargetCell(boardWidth, boardHeight));
         }
 
         private void CompleteTutorial()

@@ -14,20 +14,44 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _boardWidth: 10
   _boardHeight: 10
-  _tileTypeRegistry: {fileID: 11400000, guid: 153eac3747f207a40add49ed6e2dacb9, type: 2}
+  _tiles:
+    _colorTileIds:
+    - blue
+    - green
+    - orange
+    - yellow
+    - pink
+    - purple
+    - red
+    _jokerId: joker
+    _bombId: bomb
+    _skullId: skull
   _difficulties:
   - _id: easy
-    _displayName: easy
     _startingTimeSeconds: 90
-    _tileTypeCount: 4
+    _tileIds:
+    - blue
+    - green
+    - orange
+    - yellow
   - _id: normal
-    _displayName: normal
     _startingTimeSeconds: 60
-    _tileTypeCount: 5
+    _tileIds:
+    - blue
+    - green
+    - orange
+    - yellow
+    - pink
   - _id: hard
-    _displayName: hard
     _startingTimeSeconds: 45
-    _tileTypeCount: 7
+    _tileIds:
+    - blue
+    - green
+    - orange
+    - yellow
+    - pink
+    - purple
+    - red
   _timeBonusPerValidSwap: 2
   _delayBeforeCountdown: 0
   _countdownLength: 3
@@ -42,4 +66,9 @@ MonoBehaviour:
   _bombJokerSpawnChance: 0.02
   _skullSpawnChance: 0.02
   _skullTimePenaltySeconds: 5
-  _showTutorialOnNextMatch: 1
+  _tutorialSteps:
+  - {fileID: 11400000, guid: a1e4b7c92f3d4a6e8b0c1d2e3f4a5b6c, type: 2}
+  - {fileID: 11400000, guid: b2f5c8d03e4b5b7c9d1e2f3a4b5c6d7e, type: 2}
+  - {fileID: 11400000, guid: c3a6d9e14f5c6c8d0e2f3a4b5c6d7e8f, type: 2}
+  - {fileID: 11400000, guid: d4b7e0f25a6d7d9e1f3a4b5c6d7e8f9a, type: 2}
+  - {fileID: 11400000, guid: e5c8f1a36b7e8e0f2a4b5c6d7e8f9a0b, type: 2}

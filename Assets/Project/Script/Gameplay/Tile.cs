@@ -3,12 +3,12 @@
     public readonly struct Tile
     {
         public int Id { get; }
-        public int Type { get; }
+        public string TypeId { get; }
 
-        public Tile(int id, int type)
+        public Tile(int id, string typeId)
         {
             Id = id;
-            Type = type;
+            TypeId = typeId;
         }
     }
 }

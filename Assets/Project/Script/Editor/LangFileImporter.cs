@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using Gazeus.DesafioMatch3.Localization;
@@ -14,7 +15,7 @@ namespace Gazeus.DesafioMatch3.Editor
         public override void OnImportAsset(AssetImportContext context)
         {
             string text = File.ReadAllText(context.assetPath, Encoding.UTF8);
-            LangEntry[] entries = LangFileParser.Parse(text);
+            KeyValuePair<string, string>[] entries = LangFileParser.Parse(text);
             string fileName = Path.GetFileNameWithoutExtension(context.assetPath);
 
             if (fileName == RegistryFileName)
