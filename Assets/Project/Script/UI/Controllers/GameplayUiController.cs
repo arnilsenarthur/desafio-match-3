@@ -139,6 +139,8 @@ namespace Gazeus.DesafioMatch3.UI.Controllers
             TogglePause();
         }
 
+        public void Pause() => ApplyPause(true);
+
         public void Resume() => ApplyPause(false);
 
         public void ShowSettings() => _settingsPanel?.Show();

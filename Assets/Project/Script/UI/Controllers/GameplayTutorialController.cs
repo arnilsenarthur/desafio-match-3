@@ -62,7 +62,7 @@ namespace Gazeus.DesafioMatch3.UI.Controllers
                 return false;
             }
 
-            if (!SettingsService.PlayTutorialNextTime)
+            if (!ShouldStartTutorial())
             {
                 return false;
             }
@@ -91,9 +91,27 @@ namespace Gazeus.DesafioMatch3.UI.Controllers
             _gameController.SetInteractionLocked(true);
             _gameController.BeginTutorialSession();
 
-            SettingsService.ConsumePlayTutorialNextTime();
+#if UNITY_EDITOR
+            if (!_gameController.ForceShowTutorial)
+#endif
+            {
+                SettingsService.ConsumePlayTutorialNextTime();
+            }
+
             _overlay.ShowIntro(LocKeys.TutorialIntroTitle, LocKeys.TutorialIntroBody);
             return true;
+        }
+
+        private bool ShouldStartTutorial()
+        {
+#if UNITY_EDITOR
+            if (_gameController != null && _gameController.ForceShowTutorial)
+            {
+                return true;
+            }
+#endif
+
+            return SettingsService.PlayTutorialNextTime;
         }
 
         public void ContinueFromIntro()
@@ -104,6 +122,7 @@ namespace Gazeus.DesafioMatch3.UI.Controllers
             }
 
             _showingIntro = false;
+            _overlay.HideContinue();
             ShowCurrentStep();
         }
 

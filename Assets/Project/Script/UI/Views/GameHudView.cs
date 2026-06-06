@@ -191,8 +191,7 @@ namespace Gazeus.DesafioMatch3.UI.Views
             _countdownText.alpha = 1f;
             target.localScale = Vector3.one;
 
-            float duration = SettingsService.ScaleDuration(CountdownPulseDuration);
-            float halfDuration = duration * 0.5f;
+            float halfDuration = CountdownPulseDuration * 0.5f;
 
             _countdownTween = DOTween.Sequence()
                 .Append(target.DOScale(CountdownPulsePeakScale, halfDuration).SetEase(Ease.OutQuad))
@@ -211,11 +210,9 @@ namespace Gazeus.DesafioMatch3.UI.Views
             Transform target = _countdownText.transform;
             StopCountdownAnimation(resetVisuals: false);
 
-            float duration = SettingsService.ScaleDuration(CountdownHideDuration);
-
             _countdownTween = DOTween.Sequence()
-                .Join(target.DOScale(0f, duration).SetEase(Ease.InBack))
-                .Join(DOTween.To(() => _countdownText.alpha, value => _countdownText.alpha = value, 0f, duration)
+                .Join(target.DOScale(0f, CountdownHideDuration).SetEase(Ease.InBack))
+                .Join(DOTween.To(() => _countdownText.alpha, value => _countdownText.alpha = value, 0f, CountdownHideDuration)
                     .SetEase(Ease.InQuad))
                 .OnComplete(() =>
                 {

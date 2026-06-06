@@ -357,7 +357,7 @@ namespace Gazeus.DesafioMatch3.UI.Views
 
         private void ActivateTutorialGuide(Vector2Int selectCell, Vector2Int swapTargetCell)
         {
-            ClearTutorialGuide();
+            ClearTutorialGuideHighlights();
             _tutorialGuideActive = true;
             _tutorialSelectCell = selectCell;
             _tutorialSwapTargetCell = swapTargetCell;
@@ -429,7 +429,7 @@ namespace Gazeus.DesafioMatch3.UI.Views
             }
 
             EnsureTutorialHintsSetup();
-            _tutorialHints?.Hide();
+            _tutorialHints?.Hide(animated: false);
         }
 
         private TilePool GetOrCreateTilePool()
@@ -483,11 +483,17 @@ namespace Gazeus.DesafioMatch3.UI.Views
 
         private void ClearTutorialGuide()
         {
-            int previousSelect = BoardCell.IsValid(_tutorialSelectCell) ? ToIndex(_tutorialSelectCell) : -1;
-            int previousSwapTarget = BoardCell.IsValid(_tutorialSwapTargetCell) ? ToIndex(_tutorialSwapTargetCell) : -1;
+            ClearTutorialGuideHighlights();
             _tutorialGuideActive = false;
             _tutorialSelectCell = BoardCell.Invalid;
             _tutorialSwapTargetCell = BoardCell.Invalid;
+            _tutorialHints?.Hide(animated: true);
+        }
+
+        private void ClearTutorialGuideHighlights()
+        {
+            int previousSelect = BoardCell.IsValid(_tutorialSelectCell) ? ToIndex(_tutorialSelectCell) : -1;
+            int previousSwapTarget = BoardCell.IsValid(_tutorialSwapTargetCell) ? ToIndex(_tutorialSwapTargetCell) : -1;
 
             if (previousSelect >= 0)
             {
@@ -498,8 +504,6 @@ namespace Gazeus.DesafioMatch3.UI.Views
             {
                 ApplyScaleForIndex(previousSwapTarget);
             }
-
-            _tutorialHints?.Hide();
         }
 
         public bool CanSelectTutorialCell(Vector2Int cell)

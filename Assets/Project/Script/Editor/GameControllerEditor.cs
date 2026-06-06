@@ -14,12 +14,13 @@ namespace Gazeus.DesafioMatch3.Editor
         {
             serializedObject.Update();
 
-            DrawPropertiesExcluding(serializedObject, "_fallbackDifficultyId");
+            DrawPropertiesExcluding(serializedObject, "_fallbackDifficultyId", "_forceShowTutorial");
             
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Editor Tools", EditorStyles.boldLabel);
 
             DrawFallbackDifficultyField();
+            DrawForceShowTutorialField();
             DrawPlayModeTools();
 
             serializedObject.ApplyModifiedProperties();
@@ -64,6 +65,22 @@ namespace Gazeus.DesafioMatch3.Editor
 
             selectedIndex = EditorGUILayout.Popup("Fallback Difficulty Id", selectedIndex, difficultyIds);
             fallbackProperty.stringValue = difficultyIds[selectedIndex];
+        }
+
+        private void DrawForceShowTutorialField()
+        {
+            SerializedProperty forceShowProperty = serializedObject.FindProperty("_forceShowTutorial");
+
+            if (forceShowProperty == null)
+            {
+                return;
+            }
+
+            forceShowProperty.boolValue = EditorGUILayout.Toggle(
+                new GUIContent(
+                    "Force Show Tutorial",
+                    "When enabled, the tutorial always starts in Play mode, ignoring the saved tutorial setting."),
+                forceShowProperty.boolValue);
         }
 
         private void DrawPlayModeTools()

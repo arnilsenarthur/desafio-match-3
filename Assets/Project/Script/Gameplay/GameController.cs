@@ -28,6 +28,11 @@ namespace Gazeus.DesafioMatch3.Gameplay
 #if UNITY_EDITOR
         [SerializeField]
         private string _fallbackDifficultyId = "normal";
+
+        [SerializeField]
+        private bool _forceShowTutorial;
+
+        public bool ForceShowTutorial => _forceShowTutorial;
 #endif
 
         private bool _isAnimating;

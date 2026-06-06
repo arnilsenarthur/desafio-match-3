@@ -8,9 +8,6 @@ namespace Gazeus.DesafioMatch3.UI.Views
     public class TutorialOverlayView : MonoBehaviour
     {
         [SerializeField]
-        private float _bottomBarHeight = 300f;
-
-        [SerializeField]
         private TMP_Text _titleText;
 
         [SerializeField]
@@ -34,11 +31,7 @@ namespace Gazeus.DesafioMatch3.UI.Views
         private int _stepCount;
         private bool _showStepCounter;
 
-        private void Awake()
-        {
-            ApplyBottomBarLayout();
-            ConfigureRaycasts();
-        }
+        private void Awake() => ConfigureRaycasts();
 
         private void OnEnable() => LocalizationService.LanguageChanged += OnLanguageChanged;
 
@@ -47,8 +40,6 @@ namespace Gazeus.DesafioMatch3.UI.Views
         public void ShowIntro(string titleKey, string bodyKey)
         {
             gameObject.SetActive(true);
-            ApplyBottomBarLayout();
-            ApplyBottomBarContentLayout();
 
             _titleKey = titleKey;
             _bodyKey = bodyKey;
@@ -69,8 +60,6 @@ namespace Gazeus.DesafioMatch3.UI.Views
             Sprite illustrationSprite)
         {
             gameObject.SetActive(true);
-            ApplyBottomBarLayout();
-            ApplyBottomBarContentLayout();
 
             _titleKey = titleKey;
             _bodyKey = bodyKey;
@@ -83,6 +72,8 @@ namespace Gazeus.DesafioMatch3.UI.Views
             ApplyStepImage(illustrationSprite);
             ApplyLocalizedText();
         }
+
+        public void HideContinue() => SetContinueVisible(false);
 
         public void Hide()
         {
@@ -127,59 +118,6 @@ namespace Gazeus.DesafioMatch3.UI.Views
                         _stepCount);
                 }
             }
-        }
-
-        private void ApplyBottomBarLayout()
-        {
-            RectTransform rectTransform = transform as RectTransform;
-            if (rectTransform == null)
-            {
-                return;
-            }
-
-            rectTransform.anchorMin = new Vector2(0f, 0f);
-            rectTransform.anchorMax = new Vector2(1f, 0f);
-            rectTransform.pivot = new Vector2(0.5f, 0f);
-            rectTransform.anchoredPosition = Vector2.zero;
-            rectTransform.sizeDelta = new Vector2(0f, _bottomBarHeight);
-        }
-
-        private void ApplyBottomBarContentLayout()
-        {
-            LayoutBarElement(_titleText != null ? _titleText.rectTransform : null, 0.5f, 1f, new Vector2(0f, -12f), new Vector2(900f, 52f));
-            LayoutBarElement(
-                _stepCounterText != null ? _stepCounterText.rectTransform : null,
-                0.5f,
-                1f,
-                new Vector2(0f, -58f),
-                new Vector2(320f, 36f));
-            LayoutBarElement(_bodyText != null ? _bodyText.rectTransform : null, 0.5f, 0.5f, new Vector2(0f, 6f), new Vector2(920f, 110f));
-            LayoutBarElement(
-                _continueButtonRoot != null ? _continueButtonRoot.transform as RectTransform : null,
-                0.3f,
-                0f,
-                new Vector2(0f, 56f),
-                new Vector2(340f, 64f));
-            LayoutBarElement(
-                _skipButtonRoot != null ? _skipButtonRoot.transform as RectTransform : null,
-                0.7f,
-                0f,
-                new Vector2(0f, 56f),
-                new Vector2(340f, 64f));
-        }
-
-        private static void LayoutBarElement(RectTransform rectTransform, float anchorX, float anchorY, Vector2 anchoredPosition, Vector2 size)
-        {
-            if (rectTransform == null)
-            {
-                return;
-            }
-
-            rectTransform.anchorMin = new Vector2(anchorX, anchorY);
-            rectTransform.anchorMax = new Vector2(anchorX, anchorY);
-            rectTransform.pivot = new Vector2(0.5f, 0.5f);
-            rectTransform.anchoredPosition = anchoredPosition;
-            rectTransform.sizeDelta = size;
         }
 
         private void ConfigureRaycasts()
