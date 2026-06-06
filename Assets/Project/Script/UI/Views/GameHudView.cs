@@ -1,3 +1,4 @@
+using DG.Tweening;
 using Gazeus.DesafioMatch3.App;
 using Gazeus.DesafioMatch3.Gameplay;
 using Gazeus.DesafioMatch3.Localization;
@@ -8,6 +9,10 @@ namespace Gazeus.DesafioMatch3.UI.Views
 {
     public class GameHudView : MonoBehaviour
     {
+        private const float CountdownPulsePeakScale = 1.25f;
+        private const float CountdownPulseDuration = 0.4f;
+        private const float CountdownHideDuration = 0.3f;
+
         [SerializeField]
         private TMP_Text _scoreText;
 
@@ -26,6 +31,10 @@ namespace Gazeus.DesafioMatch3.UI.Views
         private int _displayedTimeSeconds = -1;
         private string _statusKey;
         private object[] _statusArgs = System.Array.Empty<object>();
+        private Tween _countdownTween;
+        private bool _countdownVisible;
+        private bool _countdownIsGo;
+        private int _countdownStepNumber;
 
         public void Bind()
         {
@@ -51,6 +60,7 @@ namespace Gazeus.DesafioMatch3.UI.Views
         private void OnDisable()
         {
             LocalizationService.LanguageChanged -= OnLanguageChanged;
+            StopCountdownAnimation(resetVisuals: true);
             Unbind();
         }
 
@@ -142,13 +152,110 @@ namespace Gazeus.DesafioMatch3.UI.Views
 
             if (!args.IsVisible)
             {
-                _countdownText.text = string.Empty;
+                _countdownVisible = false;
+                PlayCountdownHide();
                 return;
             }
 
-            _countdownText.text = args.IsGo
+            _countdownVisible = true;
+            _countdownIsGo = args.IsGo;
+            _countdownStepNumber = args.StepNumber;
+            ApplyCountdownText();
+
+            if (_countdownIsGo)
+            {
+                PlayCountdownHide();
+                return;
+            }
+
+            PlayCountdownPulse();
+        }
+
+        private void ApplyCountdownText()
+        {
+            if (_countdownText == null)
+            {
+                return;
+            }
+
+            _countdownText.text = _countdownIsGo
                 ? LocalizationService.Localize(LocKeys.CountdownGo)
-                : args.StepNumber.ToString();
+                : _countdownStepNumber.ToString();
+        }
+
+        private void PlayCountdownPulse()
+        {
+            Transform target = _countdownText.transform;
+            StopCountdownAnimation(resetVisuals: false);
+
+            _countdownText.alpha = 1f;
+            target.localScale = Vector3.one;
+
+            float duration = SettingsService.ScaleDuration(CountdownPulseDuration);
+            float halfDuration = duration * 0.5f;
+
+            _countdownTween = DOTween.Sequence()
+                .Append(target.DOScale(CountdownPulsePeakScale, halfDuration).SetEase(Ease.OutQuad))
+                .Append(target.DOScale(1f, halfDuration).SetEase(Ease.InOutSine))
+                .SetTarget(target);
+        }
+
+        private void PlayCountdownHide()
+        {
+            if (string.IsNullOrEmpty(_countdownText.text))
+            {
+                StopCountdownAnimation(resetVisuals: true);
+                return;
+            }
+
+            Transform target = _countdownText.transform;
+            StopCountdownAnimation(resetVisuals: false);
+
+            float duration = SettingsService.ScaleDuration(CountdownHideDuration);
+
+            _countdownTween = DOTween.Sequence()
+                .Join(target.DOScale(0f, duration).SetEase(Ease.InBack))
+                .Join(DOTween.To(() => _countdownText.alpha, value => _countdownText.alpha = value, 0f, duration)
+                    .SetEase(Ease.InQuad))
+                .OnComplete(() =>
+                {
+                    if (!this || _countdownText == null)
+                    {
+                        return;
+                    }
+
+                    _countdownText.text = string.Empty;
+                    ResetCountdownVisuals();
+                    _countdownTween = null;
+                })
+                .SetTarget(target);
+        }
+
+        private void StopCountdownAnimation(bool resetVisuals)
+        {
+            _countdownTween?.Kill();
+            _countdownTween = null;
+
+            if (_countdownText != null)
+            {
+                _countdownText.transform.DOKill();
+            }
+
+            if (resetVisuals)
+            {
+                ResetCountdownVisuals();
+            }
+        }
+
+        private void ResetCountdownVisuals()
+        {
+            if (_countdownText == null)
+            {
+                return;
+            }
+
+            _countdownText.transform.localScale = Vector3.one;
+            _countdownText.alpha = 1f;
         }
 
         private void OnBoardRegenerated(BoardRegeneratedEventArgs args) =>
@@ -218,6 +325,11 @@ namespace Gazeus.DesafioMatch3.UI.Views
             }
 
             ApplyStatusText();
+
+            if (_countdownVisible)
+            {
+                ApplyCountdownText();
+            }
         }
     }
 }

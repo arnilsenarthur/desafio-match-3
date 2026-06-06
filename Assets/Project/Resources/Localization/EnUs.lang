@@ -6,6 +6,7 @@ main_menu.quit=Quit
 main_menu.choose_difficulty=Choose Difficulty
 main_menu.back=Back
 main_menu.settings=Settings
+main_menu.credits=Developed by Árnilsen Arthur
 
 difficulty.easy=Easy
 difficulty.normal=Normal
@@ -52,7 +53,7 @@ game_over.default=Game over
 game_over.new_high_score=\nNew high score!
 game_over.message={0}\nScore: {1}\nBest: {2}{3}
 
-hud.score_line=Score: {0}  Best: {1}
+hud.score_line=Score: {0} ({1})
 hud.time_line=Time: {0:00}:{1:00}
 
 tutorial.intro.title=How to Play

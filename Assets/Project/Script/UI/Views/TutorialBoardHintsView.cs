@@ -2,6 +2,7 @@ using DG.Tweening;
 using Gazeus.DesafioMatch3.Gameplay;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace Gazeus.DesafioMatch3.UI.Views
 {
@@ -12,7 +13,7 @@ namespace Gazeus.DesafioMatch3.UI.Views
         private const float HintOffsetY = 34f;
 
         [SerializeField]
-        private TMP_Text _hintArrow;
+        private RectTransform _hintArrow;
 
         private BoardView _boardView;
         private RectTransform _overlayRect;
@@ -42,7 +43,7 @@ namespace Gazeus.DesafioMatch3.UI.Views
 
             gameObject.SetActive(true);
 
-            if (!PlaceHintAtCell(selectCell, "1", animateIn: true))
+            if (!PlaceHintAtCell(selectCell, animateIn: true))
             {
                 return false;
             }
@@ -59,7 +60,7 @@ namespace Gazeus.DesafioMatch3.UI.Views
             }
 
             _showingSwapTarget = true;
-            MoveHintToCell(_swapTargetCell, "2");
+            MoveHintToCell(_swapTargetCell);
         }
 
         public void ResetToSelectPhase()
@@ -70,7 +71,7 @@ namespace Gazeus.DesafioMatch3.UI.Views
             }
 
             _showingSwapTarget = false;
-            PlaceHintAtCell(_selectCell, "1", animateIn: false);
+            PlaceHintAtCell(_selectCell, animateIn: false);
             StartPulse();
         }
 
@@ -86,14 +87,12 @@ namespace Gazeus.DesafioMatch3.UI.Views
             _selectCell = selectCell;
             _swapTargetCell = swapTargetCell;
             Vector2Int cell = _showingSwapTarget ? swapTargetCell : selectCell;
-            string label = _showingSwapTarget ? "2" : "1";
 
-            if (!PlaceHintAtCell(cell, label, animateIn: false))
+            if (!PlaceHintAtCell(cell, animateIn: false))
             {
                 return false;
             }
 
-            _hintArrow.ForceMeshUpdate();
             return true;
         }
 
@@ -103,25 +102,23 @@ namespace Gazeus.DesafioMatch3.UI.Views
             gameObject.SetActive(false);
         }
 
-        private void MoveHintToCell(Vector2Int cell, string label)
+        private void MoveHintToCell(Vector2Int cell)
         {
             if (!_boardView.TryGetCellAnchoredPosition(cell, _overlayRect, out Vector2 position))
             {
                 return;
             }
 
-            ApplyHintLabel(label);
             _moveTween?.Kill();
             _pulseSequence?.Kill();
 
-            RectTransform hintRect = _hintArrow.rectTransform;
-            hintRect.DOKill();
+            _hintArrow.DOKill();
             Vector2 targetPosition = position + new Vector2(0f, HintOffsetY);
 
             _moveTween = DOTween
-                .To(() => hintRect.anchoredPosition, value => hintRect.anchoredPosition = value, targetPosition, HintMoveDuration)
+                .To(() => _hintArrow.anchoredPosition, value => _hintArrow.anchoredPosition = value, targetPosition, HintMoveDuration)
                 .SetEase(Ease.OutQuad)
-                .SetTarget(hintRect)
+                .SetTarget(_hintArrow)
                 .OnComplete(() =>
                 {
                     if (!this)
@@ -134,7 +131,7 @@ namespace Gazeus.DesafioMatch3.UI.Views
                 });
         }
 
-        private bool PlaceHintAtCell(Vector2Int cell, string label, bool animateIn)
+        private bool PlaceHintAtCell(Vector2Int cell, bool animateIn)
         {
             if (!_boardView.TryGetCellAnchoredPosition(cell, _overlayRect, out Vector2 position))
             {
@@ -143,32 +140,22 @@ namespace Gazeus.DesafioMatch3.UI.Views
 
             _moveTween?.Kill();
             _moveTween = null;
-            ApplyHintLabel(label);
 
-            RectTransform hintRect = _hintArrow.rectTransform;
-            hintRect.DOKill();
-            hintRect.anchoredPosition = position + new Vector2(0f, HintOffsetY);
+            _hintArrow.DOKill();
+            _hintArrow.anchoredPosition = position + new Vector2(0f, HintOffsetY);
             _hintArrow.gameObject.SetActive(true);
 
             if (animateIn)
             {
-                hintRect.localScale = Vector3.zero;
-                hintRect.DOScale(1f, ArrowPopDuration).SetEase(Ease.OutBack);
+                _hintArrow.localScale = Vector3.zero;
+                _hintArrow.DOScale(1f, ArrowPopDuration).SetEase(Ease.OutBack);
             }
             else
             {
-                hintRect.localScale = Vector3.one;
+                _hintArrow.localScale = Vector3.one;
             }
 
             return true;
-        }
-
-        private void ApplyHintLabel(string stepLabel)
-        {
-            _hintArrow.text = $"\u25BC\n{stepLabel}";
-            _hintArrow.fontSize = 34;
-            _hintArrow.color = new Color(1f, 0.92f, 0.2f, 1f);
-            _hintArrow.alignment = TextAlignmentOptions.Center;
         }
 
         private void EnsureInitialized()

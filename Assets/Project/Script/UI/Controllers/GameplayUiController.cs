@@ -17,19 +17,10 @@ namespace Gazeus.DesafioMatch3.UI.Controllers
         private UiPanelView _pausePanel;
 
         [SerializeField]
-        private SettingsPanelController _settingsPanel;
+        private SettingsPanelView _settingsPanel;
 
         [SerializeField]
-        private UiPanelView _confirmPanel;
-
-        [SerializeField]
-        private TMP_Text _confirmTitleText;
-
-        [SerializeField]
-        private TMP_Text _confirmMessageText;
-
-        [SerializeField]
-        private TMP_Text _confirmButtonText;
+        private ConfirmDialogView _confirmDialog;
 
         [SerializeField]
         private UiPanelView _gameOverPanel;
@@ -41,41 +32,11 @@ namespace Gazeus.DesafioMatch3.UI.Controllers
         private GameplayTutorialController _gameplayTutorial;
 
         private bool _gameEventsBound;
-        private ConfirmAction _pendingConfirmAction;
-        private ConfirmDialogContent _activeConfirm;
-        private bool _hasActiveConfirm;
         private GameEndedEventArgs _lastGameEndedArgs;
         private bool _gameOverVisible;
         private int _gameOverBestScore;
         private bool _gameOverIsNewHighScore;
         private string _gameOverReasonKey;
-
-        private enum ConfirmAction
-        {
-            None,
-            Restart,
-            MainMenu
-        }
-
-        private readonly struct ConfirmDialogContent
-        {
-            public ConfirmAction Action { get; }
-            public string TitleKey { get; }
-            public string MessageKey { get; }
-            public string ConfirmLabelKey { get; }
-
-            public ConfirmDialogContent(
-                ConfirmAction action,
-                string titleKey,
-                string messageKey,
-                string confirmLabelKey)
-            {
-                Action = action;
-                TitleKey = titleKey;
-                MessageKey = messageKey;
-                ConfirmLabelKey = confirmLabelKey;
-            }
-        }
 
         private void Awake()
         {
@@ -89,21 +50,31 @@ namespace Gazeus.DesafioMatch3.UI.Controllers
                 _gameplayTutorial = GetComponent<GameplayTutorialController>();
             }
 
-            _pausePanel?.Hide();
-            _settingsPanel?.Hide();
-            _confirmPanel?.Hide();
-            _gameOverPanel?.Hide();
+            UiPanelView.HideAllOnLoad(_pausePanel, _confirmDialog, _gameOverPanel);
+            _settingsPanel?.Hide(animated: false);
         }
 
         private void OnEnable()
         {
             LocalizationService.LanguageChanged += OnLanguageChanged;
+
+            if (_confirmDialog != null)
+            {
+                _confirmDialog.Confirmed += OnConfirmDialogConfirmed;
+            }
+
             BindGameEvents();
         }
 
         private void OnDisable()
         {
             LocalizationService.LanguageChanged -= OnLanguageChanged;
+
+            if (_confirmDialog != null)
+            {
+                _confirmDialog.Confirmed -= OnConfirmDialogConfirmed;
+            }
+
             UnbindGameEvents();
         }
 
@@ -148,9 +119,9 @@ namespace Gazeus.DesafioMatch3.UI.Controllers
                 return;
             }
 
-            if (_confirmPanel != null && _confirmPanel.gameObject.activeSelf)
+            if (_confirmDialog != null && _confirmDialog.IsVisible)
             {
-                CancelConfirm();
+                _confirmDialog.Cancel();
                 return;
             }
 
@@ -160,7 +131,7 @@ namespace Gazeus.DesafioMatch3.UI.Controllers
                 return;
             }
 
-            if (_gameOverPanel != null && _gameOverPanel.gameObject.activeSelf)
+            if (_gameOverPanel != null && _gameOverPanel.IsVisible)
             {
                 return;
             }
@@ -178,73 +149,25 @@ namespace Gazeus.DesafioMatch3.UI.Controllers
 
         public void Retry() => GameService.RestartCurrentGame();
 
-        public void ShowRestartConfirm() => ShowConfirm(new ConfirmDialogContent(
-            ConfirmAction.Restart,
-            LocKeys.ConfirmRestartTitle,
-            LocKeys.ConfirmRestartMessage,
-            LocKeys.ConfirmRestartButton));
+        public void ShowRestartConfirm() => _confirmDialog?.ShowRestartConfirm();
 
-        public void ShowMainMenuConfirm() => ShowConfirm(new ConfirmDialogContent(
-            ConfirmAction.MainMenu,
-            LocKeys.ConfirmMainMenuTitle,
-            LocKeys.ConfirmMainMenuMessage,
-            LocKeys.ConfirmMainMenuButton));
+        public void ShowMainMenuConfirm() => _confirmDialog?.ShowMainMenuConfirm();
 
-        public void CancelConfirm()
+        public void CancelConfirm() => _confirmDialog?.Cancel();
+
+        public void Confirm() => _confirmDialog?.Confirm();
+
+        private void OnConfirmDialogConfirmed(ConfirmDialogView.ConfirmAction action)
         {
-            _pendingConfirmAction = ConfirmAction.None;
-            _hasActiveConfirm = false;
-            _confirmPanel?.Hide();
-        }
-
-        public void Confirm()
-        {
-            ConfirmAction action = _pendingConfirmAction;
-            _pendingConfirmAction = ConfirmAction.None;
-            _hasActiveConfirm = false;
-            _confirmPanel?.Hide();
-
             switch (action)
             {
-                case ConfirmAction.Restart:
+                case ConfirmDialogView.ConfirmAction.Restart:
                     ApplyPause(false);
                     GameService.RestartCurrentGame();
                     break;
-                case ConfirmAction.MainMenu:
+                case ConfirmDialogView.ConfirmAction.MainMenu:
                     GoToMainMenu();
                     break;
-            }
-        }
-
-        private void ShowConfirm(ConfirmDialogContent content)
-        {
-            _pendingConfirmAction = content.Action;
-            _activeConfirm = content;
-            _hasActiveConfirm = true;
-            ApplyConfirmText();
-            _confirmPanel?.Show();
-        }
-
-        private void ApplyConfirmText()
-        {
-            if (!_hasActiveConfirm)
-            {
-                return;
-            }
-
-            if (_confirmTitleText != null)
-            {
-                _confirmTitleText.text = LocalizationService.Localize(_activeConfirm.TitleKey);
-            }
-
-            if (_confirmMessageText != null)
-            {
-                _confirmMessageText.text = LocalizationService.Localize(_activeConfirm.MessageKey);
-            }
-
-            if (_confirmButtonText != null)
-            {
-                _confirmButtonText.text = LocalizationService.Localize(_activeConfirm.ConfirmLabelKey);
             }
         }
 
@@ -273,7 +196,7 @@ namespace Gazeus.DesafioMatch3.UI.Controllers
             {
                 _pausePanel?.Hide();
                 _settingsPanel?.Hide();
-                CancelConfirm();
+                _confirmDialog?.Cancel();
             }
 
             GameService.SetPaused(paused);
@@ -288,7 +211,8 @@ namespace Gazeus.DesafioMatch3.UI.Controllers
 
             _gameOverVisible = false;
             _gameOverPanel?.Hide();
-            CancelConfirm();
+            _confirmDialog?.Cancel();
+
             if (_gameplayTutorial == null || !_gameplayTutorial.IsActive)
             {
                 ApplyPause(false);
@@ -304,7 +228,7 @@ namespace Gazeus.DesafioMatch3.UI.Controllers
 
             _pausePanel?.Hide();
             _settingsPanel?.Hide();
-            CancelConfirm();
+            _confirmDialog?.Cancel();
 
             _lastGameEndedArgs = args;
             _gameOverVisible = true;
@@ -344,11 +268,6 @@ namespace Gazeus.DesafioMatch3.UI.Controllers
             if (!this)
             {
                 return;
-            }
-
-            if (_confirmPanel != null && _confirmPanel.gameObject.activeSelf)
-            {
-                ApplyConfirmText();
             }
 
             if (_gameOverVisible)

@@ -1,24 +1,17 @@
 using Gazeus.DesafioMatch3.UI.Settings;
 using UnityEngine;
 
-namespace Gazeus.DesafioMatch3.UI.Controllers
+namespace Gazeus.DesafioMatch3.UI.Views
 {
-    public class SettingsPanelController : MonoBehaviour
+    public class SettingsPanelView : UiPanelView
     {
         private SettingRowBase[] _rows;
 
-        public bool IsVisible => gameObject.activeSelf;
-
-        private void Awake() => _rows = GetComponentsInChildren<SettingRowBase>(true);
-
-        public void Show()
+        protected override void OnBeforeShow()
         {
-            RefreshRows();
             transform.SetAsLastSibling();
-            gameObject.SetActive(true);
+            RefreshRows();
         }
-
-        public void Hide() => gameObject.SetActive(false);
 
         private void RefreshRows()
         {

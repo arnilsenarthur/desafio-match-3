@@ -5,7 +5,8 @@ main_menu.play=Jogar
 main_menu.quit=Sair
 main_menu.choose_difficulty=Escolha a dificuldade
 main_menu.back=Voltar
-main_menu.settings=Configuracoes
+main_menu.settings=Configurações
+main_menu.credits=Desenvolvido por Árnilsen Arthur
 
 difficulty.easy=Facil
 difficulty.normal=Normal
@@ -16,13 +17,13 @@ common.cancel=Cancelar
 pause.title=Pausado
 pause.resume=Continuar
 pause.main_menu=Menu principal
-pause.settings=Configuracoes
+pause.settings=Configurações
 
-settings.title=Configuracoes
+settings.title=Configurações
 settings.language=Idioma
 settings.vfx_volume=Volume dos efeitos
-settings.music_volume=Volume da musica
-settings.animation_speed=Velocidade das animacoes
+settings.music_volume=Volume da música
+settings.animation_speed=Velocidade das animações
 settings.play_tutorial_next_time=Mostrar tutorial na proxima partida
 settings.close=Fechar
 
@@ -52,7 +53,7 @@ game_over.default=Fim de jogo
 game_over.new_high_score=\nNovo recorde!
 game_over.message={0}\nPontos: {1}\nRecorde: {2}{3}
 
-hud.score_line=Pontos: {0}  Recorde: {1}
+hud.score_line=Pontos: {0} ({1})
 hud.time_line=Tempo: {0:00}:{1:00}
 
 tutorial.intro.title=Como jogar

@@ -1200,7 +1200,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0.08, g: 0.1, b: 0.16, a: 0.94}
+  m_Color: {r: 0, g: 0, b: 0, a: 0.8}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -1229,6 +1229,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ae2f5b3c4d5e6f708192a3b4c5d6e7f9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _modal: {fileID: 0}
+  _animationDuration: 0.25
+  _showScaleFrom: 0.9
+  _showEase: 27
+  _hideEase: 26
 --- !u!1 &7331622150676629561
 GameObject:
   m_ObjectHideFlags: 0
