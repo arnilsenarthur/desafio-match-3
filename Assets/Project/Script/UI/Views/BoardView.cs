@@ -277,6 +277,8 @@ namespace Gazeus.DesafioMatch3.UI.Views
             _animations.Bind(_tiles, _tileSpots, _tilePool, _width, gameObject, GetTargetScaleForIndex);
         }
 
+        public Tween PlayEnterAnimation() => _animations.PlayEnterAnimation();
+
         public void ClearBoard()
         {
             ClearSelection();

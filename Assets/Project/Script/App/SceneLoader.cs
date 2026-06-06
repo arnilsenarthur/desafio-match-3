@@ -1,4 +1,4 @@
-using UnityEngine.SceneManagement;
+using System;
 
 namespace Gazeus.DesafioMatch3.App
 {
@@ -7,12 +7,10 @@ namespace Gazeus.DesafioMatch3.App
         public const string MainMenuScene = "MainMenu";
         public const string GameplayScene = "Gameplay";
 
-        public static void LoadMainMenu()
-        {
-            GameRunContext.Clear();
-            SceneManager.LoadScene(MainMenuScene);
-        }
+        public static void LoadMainMenu() =>
+            SceneTransitionService.LoadScene(MainMenuScene, GameRunContext.Clear);
 
-        public static void LoadGameplay() => SceneManager.LoadScene(GameplayScene);
+        public static void LoadGameplay() =>
+            SceneTransitionService.LoadScene(GameplayScene);
     }
 }

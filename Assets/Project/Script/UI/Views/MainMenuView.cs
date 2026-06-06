@@ -1,4 +1,5 @@
 using System.Collections;
+using DG.Tweening;
 using Gazeus.DesafioMatch3.App;
 using Gazeus.DesafioMatch3.Data;
 using Gazeus.DesafioMatch3.Localization;
@@ -9,6 +10,9 @@ namespace Gazeus.DesafioMatch3.UI.Views
 {
     public class MainMenuView : UiPanelView
     {
+        private const float EnterDuration = 0.35f;
+        private const float EnterStagger = 0.08f;
+
         [SerializeField]
         private GameConfig _gameConfig;
 
@@ -21,8 +25,12 @@ namespace Gazeus.DesafioMatch3.UI.Views
         [SerializeField]
         private float _highScoreCycleSeconds = 3f;
 
+        [SerializeField]
+        private RectTransform[] _enterElements;
+
         private Coroutine _highScoreCycleCoroutine;
         private int _highScoreCycleIndex;
+        private Tween _enterTween;
 
         private void OnEnable() => LocalizationService.LanguageChanged += OnLanguageChanged;
 
@@ -30,16 +38,29 @@ namespace Gazeus.DesafioMatch3.UI.Views
         {
             LocalizationService.LanguageChanged -= OnLanguageChanged;
             StopHighScoreCycle();
+            _enterTween?.Kill();
+            _enterTween = null;
         }
 
         protected override void OnBeforeShow()
         {
+            PlayEnterAnimation();
             StartHighScoreCycle();
         }
 
         protected override void OnAfterHide()
         {
             StopHighScoreCycle();
+            _enterTween?.Kill();
+            _enterTween = null;
+        }
+
+        public IEnumerator WaitForEnterAnimation()
+        {
+            if (_enterTween != null && _enterTween.IsActive())
+            {
+                yield return _enterTween.WaitForCompletion();
+            }
         }
 
         private void OnLanguageChanged()
@@ -53,6 +74,59 @@ namespace Gazeus.DesafioMatch3.UI.Views
             {
                 ShowHighScoreEntry(_highScoreCycleIndex);
             }
+        }
+
+        private void PlayEnterAnimation()
+        {
+            _enterTween?.Kill();
+
+            RectTransform[] targets = ResolveEnterElements();
+            if (targets == null || targets.Length == 0)
+            {
+                return;
+            }
+
+            float duration = SettingsService.ScaleDuration(EnterDuration);
+            float stagger = SettingsService.ScaleDuration(EnterStagger);
+            Sequence sequence = DOTween.Sequence();
+
+            for (int i = 0; i < targets.Length; i++)
+            {
+                RectTransform target = targets[i];
+                if (target == null)
+                {
+                    continue;
+                }
+
+                target.localScale = Vector3.zero;
+                sequence.Insert(
+                    i * stagger,
+                    target.DOScale(1f, duration).SetEase(Ease.OutBack));
+            }
+
+            _enterTween = sequence.SetLink(gameObject, LinkBehaviour.KillOnDestroy);
+        }
+
+        private RectTransform[] ResolveEnterElements()
+        {
+            if (_enterElements != null && _enterElements.Length > 0)
+            {
+                return _enterElements;
+            }
+
+            RectTransform root = transform as RectTransform;
+            if (root == null || root.childCount == 0)
+            {
+                return System.Array.Empty<RectTransform>();
+            }
+
+            var targets = new RectTransform[root.childCount];
+            for (int i = 0; i < root.childCount; i++)
+            {
+                targets[i] = root.GetChild(i) as RectTransform;
+            }
+
+            return targets;
         }
 
         private void StartHighScoreCycle()

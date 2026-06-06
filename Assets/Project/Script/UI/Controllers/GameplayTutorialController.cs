@@ -86,7 +86,6 @@ namespace Gazeus.DesafioMatch3.UI.Controllers
             }
 
             GameService.EnterTutorialMode();
-            _gameController.RefreshTutorialBoard();
             _gameController.SetPaused(false);
             _gameController.SetInteractionLocked(true);
             _gameController.BeginTutorialSession();

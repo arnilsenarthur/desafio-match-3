@@ -1,0 +1,129 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!687078895 &4343727234628468602
+SpriteAtlas:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: AtlasUI
+  m_EditorData:
+    serializedVersion: 2
+    textureSettings:
+      serializedVersion: 2
+      anisoLevel: 1
+      compressionQuality: 50
+      maxTextureSize: 2048
+      textureCompression: 0
+      filterMode: 1
+      generateMipMaps: 0
+      readable: 0
+      crunchedCompression: 0
+      sRGB: 1
+    platformSettings:
+    - serializedVersion: 4
+      m_BuildTarget: Android
+      m_MaxTextureSize: 512
+      m_ResizeAlgorithm: 0
+      m_TextureFormat: 50
+      m_TextureCompression: 1
+      m_CompressionQuality: 50
+      m_CrunchedCompression: 0
+      m_AllowsAlphaSplitting: 0
+      m_Overridden: 1
+      m_IgnorePlatformSupport: 0
+      m_AndroidETC2FallbackOverride: 0
+      m_ForceMaximumCompressionQuality_BC6H_BC7: 0
+    - serializedVersion: 4
+      m_BuildTarget: iOS
+      m_MaxTextureSize: 512
+      m_ResizeAlgorithm: 0
+      m_TextureFormat: 50
+      m_TextureCompression: 1
+      m_CompressionQuality: 50
+      m_CrunchedCompression: 0
+      m_AllowsAlphaSplitting: 0
+      m_Overridden: 1
+      m_IgnorePlatformSupport: 0
+      m_AndroidETC2FallbackOverride: 0
+      m_ForceMaximumCompressionQuality_BC6H_BC7: 0
+    - serializedVersion: 4
+      m_BuildTarget: DefaultTexturePlatform
+      m_MaxTextureSize: 512
+      m_ResizeAlgorithm: 0
+      m_TextureFormat: -1
+      m_TextureCompression: 1
+      m_CompressionQuality: 50
+      m_CrunchedCompression: 0
+      m_AllowsAlphaSplitting: 0
+      m_Overridden: 0
+      m_IgnorePlatformSupport: 0
+      m_AndroidETC2FallbackOverride: 0
+      m_ForceMaximumCompressionQuality_BC6H_BC7: 0
+    packingSettings:
+      serializedVersion: 2
+      padding: 8
+      blockOffset: 1
+      allowAlphaSplitting: 0
+      enableRotation: 0
+      enableTightPacking: 1
+      enableAlphaDilation: 0
+    secondaryTextureSettings: {}
+    variantMultiplier: 1
+    packables:
+    - {fileID: 2800000, guid: 7680facb9db90e04c9b6eea0a7da7bf6, type: 3}
+    bindAsDefault: 1
+    isAtlasV2: 0
+    cachedData: {fileID: 0}
+    packedSpriteRenderDataKeys:
+    - 7680facb9db90e04c9b6eea0a7da7bf6: -3027036644532977447
+    - 7680facb9db90e04c9b6eea0a7da7bf6: -1182733573173206384
+    - 7680facb9db90e04c9b6eea0a7da7bf6: -2028478699932969667
+    - 7680facb9db90e04c9b6eea0a7da7bf6: -1044460226
+    - 7680facb9db90e04c9b6eea0a7da7bf6: 3326614988746260040
+    - 7680facb9db90e04c9b6eea0a7da7bf6: -1224236817
+    - 7680facb9db90e04c9b6eea0a7da7bf6: -368946663
+    - 7680facb9db90e04c9b6eea0a7da7bf6: 15283682
+    - 7680facb9db90e04c9b6eea0a7da7bf6: 8421343163492301415
+    - 7680facb9db90e04c9b6eea0a7da7bf6: 1059789174
+    - 7680facb9db90e04c9b6eea0a7da7bf6: 453822776
+    - 7680facb9db90e04c9b6eea0a7da7bf6: 1359551944
+    - 7680facb9db90e04c9b6eea0a7da7bf6: -9067079053827028866
+    - 7680facb9db90e04c9b6eea0a7da7bf6: -8545136531463738433
+    - 7680facb9db90e04c9b6eea0a7da7bf6: -2007011237
+  m_MasterAtlas: {fileID: 0}
+  m_PackedSprites:
+  - {fileID: -3027036644532977447, guid: 7680facb9db90e04c9b6eea0a7da7bf6, type: 3}
+  - {fileID: -1182733573173206384, guid: 7680facb9db90e04c9b6eea0a7da7bf6, type: 3}
+  - {fileID: -2028478699932969667, guid: 7680facb9db90e04c9b6eea0a7da7bf6, type: 3}
+  - {fileID: -1044460226, guid: 7680facb9db90e04c9b6eea0a7da7bf6, type: 3}
+  - {fileID: 3326614988746260040, guid: 7680facb9db90e04c9b6eea0a7da7bf6, type: 3}
+  - {fileID: -1224236817, guid: 7680facb9db90e04c9b6eea0a7da7bf6, type: 3}
+  - {fileID: -368946663, guid: 7680facb9db90e04c9b6eea0a7da7bf6, type: 3}
+  - {fileID: 15283682, guid: 7680facb9db90e04c9b6eea0a7da7bf6, type: 3}
+  - {fileID: 8421343163492301415, guid: 7680facb9db90e04c9b6eea0a7da7bf6, type: 3}
+  - {fileID: 1059789174, guid: 7680facb9db90e04c9b6eea0a7da7bf6, type: 3}
+  - {fileID: 453822776, guid: 7680facb9db90e04c9b6eea0a7da7bf6, type: 3}
+  - {fileID: 1359551944, guid: 7680facb9db90e04c9b6eea0a7da7bf6, type: 3}
+  - {fileID: -9067079053827028866, guid: 7680facb9db90e04c9b6eea0a7da7bf6, type: 3}
+  - {fileID: -8545136531463738433, guid: 7680facb9db90e04c9b6eea0a7da7bf6, type: 3}
+  - {fileID: -2007011237, guid: 7680facb9db90e04c9b6eea0a7da7bf6, type: 3}
+  m_PackedSpriteNamesToIndex:
+  - SheetUI_BackgroundRound
+  - SheetUI_Slider
+  - SheetUI_ButtonOff
+  - SheetUI_ButtonOn
+  - SheetUI_Arrow
+  - SheetUI_IconSettings
+  - SheetUI_IconPlay
+  - SheetUI_IconCancel
+  - SheetUI_Checkbox
+  - SheetUI_MediumDifficulty
+  - SheetUI_IconPause
+  - SheetUI_HardDifficulty
+  - SheetUI_Background
+  - SheetUI_IconConfirm
+  - SheetUI_EasyDifficulty
+  m_RenderDataMap: {}
+  m_Tag: AtlasUI
+  m_IsVariant: 0

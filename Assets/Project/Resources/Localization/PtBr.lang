@@ -13,6 +13,7 @@ difficulty.normal=Normal
 difficulty.hard=Dificil
 
 common.cancel=Cancelar
+common.loading=Carregando
 
 pause.title=Pausado
 pause.resume=Continuar

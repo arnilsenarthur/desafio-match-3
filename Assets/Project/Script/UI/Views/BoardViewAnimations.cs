@@ -10,6 +10,10 @@ namespace Gazeus.DesafioMatch3.UI.Views
     internal sealed class BoardViewAnimations
     {
         private const float TilePopDuration = 0.2f;
+        private const float SpotEnterDuration = 0.6f;
+        private const float TileEnterDuration = 0.5f;
+        private const float EnterStagger = 0.05f;
+        private const float TileEnterDelay = 0.1f;
 
         private GameObject[] _tiles;
         private TileSpotView[] _tileSpots;
@@ -124,6 +128,56 @@ namespace Gazeus.DesafioMatch3.UI.Views
                 _tiles[fromIndex] = null;
                 _tiles[toIndex] = tile;
                 sequence.Join(_tileSpots[toIndex].AnimatedSetTile(tile));
+            }
+
+            return LinkSequence(sequence);
+        }
+
+        public Tween PlayEnterAnimation()
+        {
+            if (_tileSpots == null || _tileSpots.Length == 0)
+            {
+                return DOTween.Sequence().AppendInterval(0.01f);
+            }
+
+            Sequence sequence = DOTween.Sequence();
+            float stagger = SettingsService.ScaleDuration(EnterStagger);
+            float spotDuration = SettingsService.ScaleDuration(SpotEnterDuration);
+            float tileDuration = SettingsService.ScaleDuration(TileEnterDuration);
+            float tileDelay = SettingsService.ScaleDuration(TileEnterDelay);
+            int centerX = (_width - 1) / 2;
+            int centerY = (_tileSpots.Length / _width - 1) / 2;
+
+            for (int i = 0; i < _tileSpots.Length; i++)
+            {
+                TileSpotView spot = _tileSpots[i];
+                if (spot == null)
+                {
+                    continue;
+                }
+
+                Transform spotTransform = spot.transform;
+                spotTransform.localScale = Vector3.zero;
+
+                int x = i % _width;
+                int y = i / _width;
+                float delay = (Mathf.Abs(x - centerX) + Mathf.Abs(y - centerY)) * stagger;
+
+                sequence.Insert(
+                    delay,
+                    spotTransform.DOScale(1f, spotDuration).SetEase(Ease.OutBack));
+
+                GameObject tile = _tiles[i];
+                if (tile == null)
+                {
+                    continue;
+                }
+
+                float targetScale = _getTargetScale != null ? _getTargetScale(i) : 1f;
+                tile.transform.localScale = Vector3.zero;
+                sequence.Insert(
+                    delay + tileDelay,
+                    tile.transform.DOScale(targetScale, tileDuration).SetEase(Ease.OutBack));
             }
 
             return LinkSequence(sequence);

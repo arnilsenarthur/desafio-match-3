@@ -99,10 +99,10 @@ TextureImporter:
   platformSettings:
   - serializedVersion: 4
     buildTarget: DefaultTexturePlatform
-    maxTextureSize: 2048
+    maxTextureSize: 512
     resizeAlgorithm: 0
     textureFormat: -1
-    textureCompression: 1
+    textureCompression: 0
     compressionQuality: 50
     crunchedCompression: 0
     allowsAlphaSplitting: 0
@@ -112,9 +112,35 @@ TextureImporter:
     forceMaximumCompressionQuality_BC6H_BC7: 0
   - serializedVersion: 4
     buildTarget: Standalone
-    maxTextureSize: 2048
+    maxTextureSize: 512
     resizeAlgorithm: 0
-    textureFormat: -1
+    textureFormat: 12
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Android
+    maxTextureSize: 512
+    resizeAlgorithm: 0
+    textureFormat: 50
+    textureCompression: 1
+    compressionQuality: 100
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: iOS
+    maxTextureSize: 512
+    resizeAlgorithm: 0
+    textureFormat: 50
     textureCompression: 1
     compressionQuality: 50
     crunchedCompression: 0
@@ -262,8 +288,8 @@ TextureImporter:
       name: SheetUI_ButtonOff
       rect:
         serializedVersion: 2
-        x: 1
-        y: 0
+        x: 256
+        y: 256
         width: 128
         height: 128
       alignment: 0
@@ -284,8 +310,8 @@ TextureImporter:
       name: SheetUI_ButtonOn
       rect:
         serializedVersion: 2
-        x: 128
-        y: 0
+        x: 384
+        y: 256
         width: 128
         height: 128
       alignment: 0
@@ -390,6 +416,72 @@ TextureImporter:
       indices: 
       edges: []
       weights: []
+    - serializedVersion: 2
+      name: SheetUI_EasyDifficulty
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 128
+        width: 256
+        height: 128
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 862259e8b79ab3f4c937e3734d9ce563
+      internalID: -2007011237
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: SheetUI_MediumDifficulty
+      rect:
+        serializedVersion: 2
+        x: 256
+        y: 128
+        width: 256
+        height: 128
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 478805bfce9b0ba41b27e0b73fd621dc
+      internalID: 1059789174
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: SheetUI_HardDifficulty
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 0
+        width: 256
+        height: 128
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: ef794cc039a089241aa7e6ca85279786
+      internalID: 1359551944
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
     outline: []
     customData: 
     physicsShape: []
@@ -406,7 +498,6 @@ TextureImporter:
       - key: SpriteEditor.SliceSettings
         value: '{"sliceOnImport":false,"gridCellCount":{"x":4.0,"y":4.0},"gridSpriteSize":{"x":128.0,"y":128.0},"gridSpriteOffset":{"x":0.0,"y":0.0},"gridSpritePadding":{"x":0.0,"y":0.0},"pivot":{"x":0.5,"y":0.5},"pivotPixels":{"x":0.0,"y":0.0},"autoSlicingMethod":0,"spriteAlignment":0,"pivotUnitMode":0,"slicingType":2,"keepEmptyRects":false,"isAlternate":false}'
     nameFileIdTable:
-      SheetUI_2: -104868407
       SheetUI_5: -8876439903250461043
       SheetUI_8: -2094824563025627319
       SheetUI_Arrow: 3326614988746260040
@@ -415,11 +506,14 @@ TextureImporter:
       SheetUI_ButtonOff: -2028478699932969667
       SheetUI_ButtonOn: -1044460226
       SheetUI_Checkbox: 8421343163492301415
+      SheetUI_EasyDifficulty: -2007011237
+      SheetUI_HardDifficulty: -104868407
       SheetUI_IconCancel: 15283682
       SheetUI_IconConfirm: -8545136531463738433
       SheetUI_IconPause: 453822776
       SheetUI_IconPlay: -368946663
       SheetUI_IconSettings: -1224236817
+      SheetUI_MediumDifficulty: 1059789174
       SheetUI_Slider: -1182733573173206384
       SheetUI_Wrong: -3762318617733838460
   mipmapLimitGroupName: 

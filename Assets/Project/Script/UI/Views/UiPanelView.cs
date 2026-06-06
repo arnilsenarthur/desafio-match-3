@@ -52,11 +52,12 @@ namespace Gazeus.DesafioMatch3.UI.Views
             if (_modal == null || !animated)
             {
                 ResetModalInstant();
+                SetModalInteraction(true);
                 return;
             }
 
             SetRootInteractionBlocked(true);
-            SetModalInteraction(false);
+            SetModalInteraction(true);
             PrepareModalForShow();
 
             _isAnimating = true;
