@@ -12,6 +12,8 @@ difficulty.easy=Facil
 difficulty.normal=Normal
 difficulty.hard=Dificil
 
+best_score.title=Recorde
+
 common.cancel=Cancelar
 common.loading=Carregando
 
@@ -54,6 +56,9 @@ game_over.default=Fim de jogo
 game_over.new_high_score=\nNovo recorde!
 game_over.message={0}\nPontos: {1}\nRecorde: {2}{3}
 
+hud.best_score.label=Recorde:
+hud.score_label=Pontos
+hud.time_label=Tempo
 hud.score_line=Pontos: {0} ({1})
 hud.time_line=Tempo: {0:00}:{1:00}
 

@@ -425,7 +425,7 @@ TextureImporter:
         width: 256
         height: 128
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -447,7 +447,7 @@ TextureImporter:
         width: 256
         height: 128
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -469,7 +469,7 @@ TextureImporter:
         width: 256
         height: 128
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -478,6 +478,28 @@ TextureImporter:
       bones: []
       spriteID: ef794cc039a089241aa7e6ca85279786
       internalID: 1359551944
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: SheetUI_IconTrophy
+      rect:
+        serializedVersion: 2
+        x: 448
+        y: 384
+        width: 64
+        height: 64
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 482d63a61918e9540a25bdd06d605df5
+      internalID: 2129678235
       vertices: []
       indices: 
       edges: []
@@ -513,6 +535,7 @@ TextureImporter:
       SheetUI_IconPause: 453822776
       SheetUI_IconPlay: -368946663
       SheetUI_IconSettings: -1224236817
+      SheetUI_IconTrophy: 2129678235
       SheetUI_MediumDifficulty: 1059789174
       SheetUI_Slider: -1182733573173206384
       SheetUI_Wrong: -3762318617733838460

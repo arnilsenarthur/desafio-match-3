@@ -78,6 +78,7 @@ SpriteAtlas:
     packedSpriteRenderDataKeys:
     - 7680facb9db90e04c9b6eea0a7da7bf6: -3027036644532977447
     - 7680facb9db90e04c9b6eea0a7da7bf6: -1182733573173206384
+    - 7680facb9db90e04c9b6eea0a7da7bf6: 2129678235
     - 7680facb9db90e04c9b6eea0a7da7bf6: -2028478699932969667
     - 7680facb9db90e04c9b6eea0a7da7bf6: -1044460226
     - 7680facb9db90e04c9b6eea0a7da7bf6: 3326614988746260040
@@ -95,6 +96,7 @@ SpriteAtlas:
   m_PackedSprites:
   - {fileID: -3027036644532977447, guid: 7680facb9db90e04c9b6eea0a7da7bf6, type: 3}
   - {fileID: -1182733573173206384, guid: 7680facb9db90e04c9b6eea0a7da7bf6, type: 3}
+  - {fileID: 2129678235, guid: 7680facb9db90e04c9b6eea0a7da7bf6, type: 3}
   - {fileID: -2028478699932969667, guid: 7680facb9db90e04c9b6eea0a7da7bf6, type: 3}
   - {fileID: -1044460226, guid: 7680facb9db90e04c9b6eea0a7da7bf6, type: 3}
   - {fileID: 3326614988746260040, guid: 7680facb9db90e04c9b6eea0a7da7bf6, type: 3}
@@ -111,6 +113,7 @@ SpriteAtlas:
   m_PackedSpriteNamesToIndex:
   - SheetUI_BackgroundRound
   - SheetUI_Slider
+  - SheetUI_IconTrophy
   - SheetUI_ButtonOff
   - SheetUI_ButtonOn
   - SheetUI_Arrow

@@ -9,18 +9,31 @@ namespace Gazeus.DesafioMatch3.UI.Views
 {
     public class GameHudView : MonoBehaviour
     {
+        private static readonly Color ScoreGreen = new(0.35f, 0.92f, 0.45f, 1f);
+        private static readonly Color TimeRed = new(0.95f, 0.3f, 0.3f, 1f);
+
         private const float CountdownPulsePeakScale = 1.25f;
         private const float CountdownPulseDuration = 0.4f;
         private const float CountdownHideDuration = 0.3f;
+        private const float ScoreHeartBeatScale = 1.14f;
+        private const float ScoreHeartBeatStep = 0.1f;
+        private const float DeltaPopupDuration = 0.75f;
+        private const float DeltaPopupRise = 28f;
 
         [SerializeField]
         private TMP_Text _scoreText;
 
         [SerializeField]
+        private TMP_Text _bestScoreValueText;
+
+        [SerializeField]
         private TMP_Text _timeText;
 
         [SerializeField]
-        private TMP_Text _statusText;
+        private TMP_Text _scoreDeltaText;
+
+        [SerializeField]
+        private TMP_Text _timeDeltaText;
 
         [SerializeField]
         private TMP_Text _countdownText;
@@ -29,12 +42,16 @@ namespace Gazeus.DesafioMatch3.UI.Views
         private string _difficultyId;
         private int _displayedScore;
         private int _displayedTimeSeconds = -1;
-        private string _statusKey;
-        private object[] _statusArgs = System.Array.Empty<object>();
         private Tween _countdownTween;
+        private Tween _scorePulseTween;
+        private Tween _scoreDeltaTween;
+        private Tween _timeDeltaTween;
+        private Vector2 _scoreDeltaRestPosition;
+        private Vector2 _timeDeltaRestPosition;
         private bool _countdownVisible;
         private bool _countdownIsGo;
         private int _countdownStepNumber;
+        private bool _deltaPositionsCached;
 
         public void Bind()
         {
@@ -49,11 +66,12 @@ namespace Gazeus.DesafioMatch3.UI.Views
             GameService.TimeChanged += OnTimeChanged;
             GameService.GameStarted += OnGameStarted;
             GameService.GameEnded += OnGameEnded;
-            GameService.BoardRegenerated += OnBoardRegenerated;
             GameService.CountdownChanged += OnCountdownChanged;
             GameService.CascadeStep += OnCascadeStep;
             _bound = true;
         }
+
+        private void Awake() => CacheDeltaPopupPositions();
 
         private void OnEnable() => LocalizationService.LanguageChanged += OnLanguageChanged;
 
@@ -61,6 +79,9 @@ namespace Gazeus.DesafioMatch3.UI.Views
         {
             LocalizationService.LanguageChanged -= OnLanguageChanged;
             StopCountdownAnimation(resetVisuals: true);
+            StopScoreAnimations();
+            _scoreDeltaTween = StopDeltaPopup(_scoreDeltaText, _scoreDeltaTween);
+            _timeDeltaTween = StopDeltaPopup(_timeDeltaText, _timeDeltaTween);
             Unbind();
         }
 
@@ -77,7 +98,6 @@ namespace Gazeus.DesafioMatch3.UI.Views
             GameService.TimeChanged -= OnTimeChanged;
             GameService.GameStarted -= OnGameStarted;
             GameService.GameEnded -= OnGameEnded;
-            GameService.BoardRegenerated -= OnBoardRegenerated;
             GameService.CountdownChanged -= OnCountdownChanged;
             GameService.CascadeStep -= OnCascadeStep;
             _bound = false;
@@ -87,8 +107,7 @@ namespace Gazeus.DesafioMatch3.UI.Views
         {
             _difficultyId = args.DifficultyId;
             _displayedTimeSeconds = -1;
-            ClearStatus();
-            UpdateScoreText(0);
+            UpdateScoreText(0, pulse: false, showDelta: false);
         }
 
         private void OnScoreChanged(ScoreChangedEventArgs args)
@@ -98,20 +117,34 @@ namespace Gazeus.DesafioMatch3.UI.Views
                 return;
             }
 
-            UpdateScoreText(args.TotalScore);
+            bool increased = args.Delta > 0;
+            UpdateScoreText(args.TotalScore, pulse: increased, showDelta: increased, delta: args.Delta);
         }
 
-        private void UpdateScoreText(int score)
+        private void UpdateScoreText(int score, bool pulse, bool showDelta, int delta = 0)
         {
             _displayedScore = score;
 
-            if (_scoreText == null)
+            if (_scoreText != null)
             {
-                return;
+                _scoreText.text = score.ToString();
             }
 
-            int best = HighScoreStorage.GetDisplayBest(_difficultyId, score);
-            _scoreText.text = LocalizationService.Localize(LocKeys.HudScoreLine, score, best);
+            if (_bestScoreValueText != null)
+            {
+                int best = HighScoreStorage.GetDisplayBest(_difficultyId, score);
+                _bestScoreValueText.text = best.ToString();
+            }
+
+            if (pulse)
+            {
+                PlayScoreHeartPulse();
+            }
+
+            if (showDelta && delta > 0)
+            {
+                PlayScoreDeltaPopup(delta);
+            }
         }
 
         private void OnTimeChanged(TimeChangedEventArgs args)
@@ -140,7 +173,17 @@ namespace Gazeus.DesafioMatch3.UI.Views
 
             int minutes = totalSeconds / 60;
             int seconds = totalSeconds % 60;
-            _timeText.text = LocalizationService.Localize(LocKeys.HudTimeLine, minutes, seconds);
+            _timeText.text = $"{minutes:00}:{seconds:00}";
+        }
+
+        private void OnCascadeStep(CascadeStepEventArgs args)
+        {
+            if (!this || args.Sequence.SkullsCleared <= 0 || args.Sequence.SkullTimePenalty <= 0f)
+            {
+                return;
+            }
+
+            PlayTimeDeltaPopup(args.Sequence.SkullTimePenalty);
         }
 
         private void OnCountdownChanged(CountdownChangedEventArgs args)
@@ -255,57 +298,155 @@ namespace Gazeus.DesafioMatch3.UI.Views
             _countdownText.alpha = 1f;
         }
 
-        private void OnBoardRegenerated(BoardRegeneratedEventArgs args) =>
-            SetStatus(LocKeys.StatusBoardReshuffled);
-
-        private void OnCascadeStep(CascadeStepEventArgs args)
+        private void PlayScoreHeartPulse()
         {
-            if (args.Sequence.SkullsCleared <= 0)
+            if (_scoreText == null)
             {
                 return;
             }
 
-            string key = args.Sequence.SkullsCleared == 1
-                ? LocKeys.StatusSkullPenalty
-                : LocKeys.StatusSkullsPenalty;
+            Transform target = _scoreText.transform;
+            _scorePulseTween?.Kill();
+            target.DOKill();
+            target.localScale = Vector3.one;
 
-            SetStatus(key, args.Sequence.SkullsCleared, args.Sequence.SkullTimePenalty);
+            float step = SettingsService.ScaleDuration(ScoreHeartBeatStep);
+
+            _scorePulseTween = DOTween.Sequence()
+                .Append(target.DOScale(ScoreHeartBeatScale, step).SetEase(Ease.OutQuad))
+                .Append(target.DOScale(1f, step).SetEase(Ease.InQuad))
+                .Append(target.DOScale(ScoreHeartBeatScale * 0.96f, step).SetEase(Ease.OutQuad))
+                .Append(target.DOScale(1f, step).SetEase(Ease.InQuad))
+                .SetTarget(target);
         }
 
-        private void OnGameEnded(GameEndedEventArgs args)
+        private void PlayScoreDeltaPopup(int delta)
         {
-            ClearStatus();
-            UpdateScoreText(args.FinalScore);
+            _scoreDeltaTween = PlayDeltaPopup(
+                _scoreDeltaText,
+                _scoreDeltaTween,
+                _scoreDeltaRestPosition,
+                $"+{delta}",
+                ScoreGreen);
         }
 
-        private void SetStatus(string key, params object[] args)
+        private void PlayTimeDeltaPopup(float penaltySeconds)
         {
-            _statusKey = key;
-            _statusArgs = args ?? System.Array.Empty<object>();
-            ApplyStatusText();
+            _timeDeltaTween = PlayDeltaPopup(
+                _timeDeltaText,
+                _timeDeltaTween,
+                _timeDeltaRestPosition,
+                $"-{penaltySeconds:0.#}s",
+                TimeRed);
         }
 
-        private void ClearStatus()
+        private Tween PlayDeltaPopup(
+            TMP_Text text,
+            Tween activeTween,
+            Vector2 restPosition,
+            string message,
+            Color color)
         {
-            _statusKey = null;
-            _statusArgs = System.Array.Empty<object>();
-            if (_statusText != null)
+            if (text == null)
             {
-                _statusText.text = string.Empty;
+                return null;
+            }
+
+            CacheDeltaPopupPositions();
+
+            StopDeltaPopup(text, activeTween);
+
+            RectTransform rect = text.rectTransform;
+            Transform target = text.transform;
+            target.DOKill();
+
+            text.gameObject.SetActive(true);
+            text.text = message;
+            text.color = new Color(color.r, color.g, color.b, 1f);
+            text.alpha = 0f;
+            rect.anchoredPosition = restPosition;
+            rect.localScale = Vector3.one * 0.85f;
+
+            float duration = SettingsService.ScaleDuration(DeltaPopupDuration);
+            float fadeIn = duration * 0.22f;
+            float hold = duration * 0.28f;
+            float fadeOut = duration * 0.5f;
+            float pulseUp = SettingsService.ScaleDuration(0.18f);
+            Vector2 endPosition = restPosition + new Vector2(0f, DeltaPopupRise);
+
+            return DOTween.Sequence()
+                .Append(DOTween.To(() => text.alpha, value => text.alpha = value, 1f, fadeIn).SetEase(Ease.OutQuad))
+                .Join(rect.DOScale(1.12f, pulseUp).SetEase(Ease.OutBack))
+                .Append(rect.DOScale(1f, pulseUp * 0.6f).SetEase(Ease.InOutSine))
+                .AppendInterval(hold)
+                .Append(DOTween.To(() => text.alpha, value => text.alpha = value, 0f, fadeOut).SetEase(Ease.InQuad))
+                .Join(DOTween.To(() => rect.anchoredPosition, value => rect.anchoredPosition = value, endPosition, fadeOut)
+                    .SetEase(Ease.OutQuad))
+                .Join(rect.DOScale(0.92f, fadeOut).SetEase(Ease.InQuad))
+                .OnComplete(() =>
+                {
+                    if (text == null)
+                    {
+                        return;
+                    }
+
+                    text.gameObject.SetActive(false);
+                    rect.anchoredPosition = restPosition;
+                    rect.localScale = Vector3.one;
+                    text.alpha = 0f;
+                })
+                .SetTarget(text);
+        }
+
+        private void StopScoreAnimations()
+        {
+            _scorePulseTween?.Kill();
+            _scorePulseTween = null;
+
+            if (_scoreText != null)
+            {
+                _scoreText.transform.DOKill();
+                _scoreText.transform.localScale = Vector3.one;
             }
         }
 
-        private void ApplyStatusText()
+        private static Tween StopDeltaPopup(TMP_Text text, Tween tween)
         {
-            if (_statusText == null)
+            tween?.Kill();
+
+            if (text == null)
+            {
+                return null;
+            }
+
+            text.transform.DOKill();
+            text.gameObject.SetActive(false);
+            text.alpha = 0f;
+            return null;
+        }
+
+        private void CacheDeltaPopupPositions()
+        {
+            if (_deltaPositionsCached)
             {
                 return;
             }
 
-            _statusText.text = string.IsNullOrEmpty(_statusKey)
-                ? string.Empty
-                : LocalizationService.Localize(_statusKey, _statusArgs);
+            if (_scoreDeltaText != null)
+            {
+                _scoreDeltaRestPosition = _scoreDeltaText.rectTransform.anchoredPosition;
+            }
+
+            if (_timeDeltaText != null)
+            {
+                _timeDeltaRestPosition = _timeDeltaText.rectTransform.anchoredPosition;
+            }
+
+            _deltaPositionsCached = true;
         }
+
+        private void OnGameEnded(GameEndedEventArgs args) =>
+            UpdateScoreText(args.FinalScore, pulse: false, showDelta: false);
 
         private void OnLanguageChanged()
         {
@@ -314,14 +455,12 @@ namespace Gazeus.DesafioMatch3.UI.Views
                 return;
             }
 
-            UpdateScoreText(_displayedScore);
+            UpdateScoreText(_displayedScore, pulse: false, showDelta: false);
 
             if (_displayedTimeSeconds >= 0)
             {
                 ApplyTimeText(_displayedTimeSeconds);
             }
-
-            ApplyStatusText();
 
             if (_countdownVisible)
             {

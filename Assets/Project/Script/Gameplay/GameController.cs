@@ -38,6 +38,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
         private bool _isAnimating;
         private bool _isPaused;
         private bool _isCountdownActive;
+        private bool _isBoardEnterActive;
         private bool _interactionLocked;
         private bool _tutorialAdvancePending;
         private bool _wired;
@@ -129,6 +130,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
         {
             StopCountdown();
             _isAnimating = false;
+            _isBoardEnterActive = false;
             _tutorialAdvancePending = false;
 
             if (_boardTweenRoot != null)
@@ -178,15 +180,23 @@ namespace Gazeus.DesafioMatch3.Gameplay
         {
             SceneTransitionService.SetLoadingVisible(false);
 
-            Tween enter = _boardView != null ? _boardView.PlayEnterAnimation() : null;
-            Coroutine reveal = StartCoroutine(SceneTransitionService.Reveal());
-
-            if (enter != null && enter.IsActive())
+            SetBoardEnterActive(true);
+            try
             {
-                yield return enter.WaitForCompletion();
-            }
+                Tween enter = _boardView != null ? _boardView.PlayEnterAnimation() : null;
+                Coroutine reveal = StartCoroutine(SceneTransitionService.Reveal());
 
-            yield return reveal;
+                if (enter != null && enter.IsActive())
+                {
+                    yield return enter.WaitForCompletion();
+                }
+
+                yield return reveal;
+            }
+            finally
+            {
+                SetBoardEnterActive(false);
+            }
         }
 
         private bool TryStartTutorial()
@@ -515,6 +525,18 @@ namespace Gazeus.DesafioMatch3.Gameplay
             GameService.Tick(Time.deltaTime);
         }
 
+        private void SetBoardEnterActive(bool active)
+        {
+            if (_isBoardEnterActive == active)
+            {
+                return;
+            }
+
+            _isBoardEnterActive = active;
+            SyncTimerPaused();
+            RefreshInteractionState();
+        }
+
         private void SyncTimerPaused()
         {
             if (!GameService.IsActive)
@@ -522,7 +544,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
                 return;
             }
 
-            GameService.TimerPaused = _isAnimating || _isPaused || _isCountdownActive;
+            GameService.TimerPaused = _isAnimating || _isPaused || _isCountdownActive || _isBoardEnterActive;
         }
 
         private void RefreshInteractionState()
@@ -532,7 +554,8 @@ namespace Gazeus.DesafioMatch3.Gameplay
                 return;
             }
 
-            bool canInteract = !_isPaused && !_isAnimating && !_isCountdownActive && !_interactionLocked &&
+            bool canInteract = !_isPaused && !_isAnimating && !_isCountdownActive && !_isBoardEnterActive &&
+                               !_interactionLocked &&
                                !GameService.IsGameOver;
             _boardView.SetInteractionEnabled(canInteract);
         }
@@ -572,7 +595,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
         private void OnTileClick(Vector2Int cell)
         {
             if (!GameService.IsActive || _interactionLocked || _isPaused || _isAnimating || _isCountdownActive ||
-                GameService.IsGameOver)
+                _isBoardEnterActive || GameService.IsGameOver)
             {
                 return;
             }

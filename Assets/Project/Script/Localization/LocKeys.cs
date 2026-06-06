@@ -4,6 +4,10 @@ namespace Gazeus.DesafioMatch3.Localization
     {
         public const string CountdownGo = "countdown.go";
 
+        public const string HudScoreLabel = "hud.score_label";
+        public const string HudTimeLabel = "hud.time_label";
+        public const string HudBestScoreLabel = "hud.best_score.label";
+
         public const string HudScoreLine = "hud.score_line";
         public const string HudTimeLine = "hud.time_line";
 
