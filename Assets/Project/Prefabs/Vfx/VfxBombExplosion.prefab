@@ -9924,7 +9924,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: df5354183df5b144f9b71188dd635ad6, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: DesafioMatch3::Gazeus.DesafioMatch3.UI.Vfx.PooledUiVfx
+  m_EditorClassIdentifier: DesafioMatch3::Gazeus.DesafioMatch3.UI.Vfx.PooledUIVfx
   _image: {fileID: 0}
   _particleSystem: {fileID: 8260855199061405524}
 --- !u!1 &4788623306614979554

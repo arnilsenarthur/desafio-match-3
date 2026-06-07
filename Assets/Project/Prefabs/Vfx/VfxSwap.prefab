@@ -49,7 +49,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: df5354183df5b144f9b71188dd635ad6, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: DesafioMatch3::Gazeus.DesafioMatch3.UI.Vfx.PooledUiVfx
+  m_EditorClassIdentifier: DesafioMatch3::Gazeus.DesafioMatch3.UI.Vfx.PooledUIVfx
   _image: {fileID: 734103634725575590}
   _lineSweepSharedMaterial: {fileID: 2100000, guid: 9a41209fd6bf1be4ea5cdfdc2d71ea15, type: 2}
   _particleSystem: {fileID: 0}

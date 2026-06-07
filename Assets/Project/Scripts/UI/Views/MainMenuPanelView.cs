@@ -9,7 +9,7 @@ using UnityEngine;
 
 namespace Gazeus.DesafioMatch3.UI.Views
 {
-    public class MainMenuView : UiPanelView
+    public class MainMenuPanelView : UIPanelView
     {
         private const float EnterDuration = 0.35f;
         private const float EnterStagger = 0.08f;
@@ -101,7 +101,7 @@ namespace Gazeus.DesafioMatch3.UI.Views
 
                 target.localScale = Vector3.zero;
                 float delay = i * stagger;
-                sequence.InsertCallback(delay, PlayEnterGemSlideSound);
+                sequence.InsertCallback(delay, PlayEnterTileSlideSound);
                 sequence.Insert(
                     delay,
                     target.DOScale(1f, duration).SetEase(Ease.OutBack));
@@ -110,8 +110,8 @@ namespace Gazeus.DesafioMatch3.UI.Views
             _enterTween = sequence.SetLink(gameObject, LinkBehaviour.KillOnDestroy);
         }
 
-        private static void PlayEnterGemSlideSound() =>
-            AudioService.PlaySfx(AudioKeys.GameplayGemSlide);
+        private static void PlayEnterTileSlideSound() =>
+            AudioService.PlaySfx(AudioKeys.GameplayTileSlide);
 
         private RectTransform[] ResolveEnterElements()
         {

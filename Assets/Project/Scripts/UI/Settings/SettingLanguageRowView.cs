@@ -3,7 +3,7 @@ using Gazeus.DesafioMatch3.Localization;
 
 namespace Gazeus.DesafioMatch3.UI.Settings
 {
-    public class LanguageSettingRowView : SettingButtonRowView
+    public class SettingLanguageRowView : SettingButtonRowView
     {
         protected override string GetSelectedValue() => SettingsService.Language;
 

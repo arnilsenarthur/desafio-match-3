@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace Gazeus.DesafioMatch3.UI.Views
 {
-    public class GameOverView : MonoBehaviour
+    public class GameOverPanelView : MonoBehaviour
     {
         private const float NewHighScoreAnimDuration = 0.7f;
         private const float NewHighScorePeakScale = 1.22f;

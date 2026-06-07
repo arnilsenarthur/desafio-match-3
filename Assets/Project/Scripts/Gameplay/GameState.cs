@@ -236,6 +236,18 @@ namespace Gazeus.DesafioMatch3.Gameplay
             const int maxAttempts = 100;
             bool boardReady = false;
 
+            // use hard mode tiles
+            if (!_config.TryGetDifficulty("hard", out GameDifficultySettings difficulty))
+            {
+                Debug.LogWarning($"Not able to get hard mode difficulty");
+            }
+
+            _shapeTypeIds = BuildShapeTypeIds(difficulty.TileIds, _tiles);
+            if (_shapeTypeIds.Count == 0)
+            {
+                Debug.LogWarning($"Difficulty '{difficulty.Id}' has no valid shape tile ids.");
+            }
+
             for (int attempt = 0; attempt < maxAttempts; attempt++)
             {
                 BuildTutorialStepBoard(step);
@@ -277,6 +289,10 @@ namespace Gazeus.DesafioMatch3.Gameplay
         private void BuildTutorialStepBoard(TutorialStepDefinition step)
         {
             HashSet<Vector2Int> scriptedCells = GetScriptedCells(step);
+            // Filler tiles must avoid the shapes the step itself places (e.g. the match-3 step
+            // uses circle + square, so no other cell may be a circle or square), keeping the
+            // scripted match the only one on the board.
+            HashSet<string> reservedShapes = GetStepShapeTypes(step);
             _tileCount = 0;
 
             for (int y = 0; y < _board.Height; y++)
@@ -299,10 +315,29 @@ namespace Gazeus.DesafioMatch3.Gameplay
                         continue;
                     }
 
-                    string typeId = PickSafeShapeType(_board, x, y);
+                    string typeId = PickSafeShapeType(_board, x, y, reservedShapes);
                     _board.Set(cell, _tileCount++, typeId);
                 }
             }
+        }
+
+        private HashSet<string> GetStepShapeTypes(TutorialStepDefinition step)
+        {
+            HashSet<string> shapes = new();
+
+            var resolvedCells = new List<(Vector2Int cell, string typeId)>();
+            step.ResolveCells(_board.Width, _board.Height, resolvedCells);
+
+            for (int i = 0; i < resolvedCells.Count; i++)
+            {
+                string typeId = resolvedCells[i].typeId;
+                if (_tiles.IsShape(typeId))
+                {
+                    shapes.Add(typeId);
+                }
+            }
+
+            return shapes;
         }
 
         private HashSet<Vector2Int> GetScriptedCells(TutorialStepDefinition step)
@@ -411,6 +446,9 @@ namespace Gazeus.DesafioMatch3.Gameplay
             _cascadeBoardSnapshots.Clear();
             bool hasMatches = FindMatches(_workingBoard, _matchedFlags, _clearedRowsScratch, _clearedColumnsScratch);
 
+            // Resolve the whole cascade up front on the working board: each iteration clears
+            // the current matches, drops tiles by gravity, refills empties, and records one
+            // BoardSequence (one animation step) before re-scanning for chained matches.
             while (hasMatches)
             {
                 int skullsCleared = TileMatching.CountSkullsInMatches(_workingBoard, _tiles, _matchedFlags);
@@ -426,6 +464,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
 
                 ApplyColumnGravity(_workingBoard);
 
+                // Refill the empty cells left at the top of each column after gravity.
                 _addedTilesList.Clear();
                 for (int y = _workingBoard.Height - 1; y > -1; y--)
                 {
@@ -445,7 +484,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
 
                 boardSequences.Add(new BoardSequence
                 {
-                    MatchedPosition = new List<Vector2Int>(_matchedPositions),
+                    MatchedPositions = new List<Vector2Int>(_matchedPositions),
                     MatchedBombs = new List<Vector2Int>(_matchedBombsScratch),
                     MovedTiles = new List<MovedTileInfo>(_movedTilesList),
                     AddedTiles = new List<AddedTileInfo>(_addedTilesList),
@@ -487,7 +526,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
 
             BoardSequence sequence = new()
             {
-                MatchedPosition = new List<Vector2Int>(_matchedPositions),
+                MatchedPositions = new List<Vector2Int>(_matchedPositions),
                 MatchedBombs = new List<Vector2Int>(_matchedBombsScratch),
                 MovedTiles = new List<MovedTileInfo>(),
                 AddedTiles = new List<AddedTileInfo>(),
@@ -541,7 +580,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
                 return _tiles.SkullId;
             }
 
-            if (Random.value < _config.BombJokerSpawnChance)
+            if (Random.value < _config.BombSpawnChance)
             {
                 return _tiles.BombId;
             }
@@ -575,12 +614,24 @@ namespace Gazeus.DesafioMatch3.Gameplay
             return createsMatch;
         }
 
-        private string PickSafeShapeType(BoardState board, int x, int y)
+        private string PickSafeShapeType(BoardState board, int x, int y) =>
+            PickSafeShapeType(board, x, y, null);
+
+        // excludedShapes (optional) are shape ids the caller forbids, e.g. the tutorial step's
+        // own shapes. They are filtered out of the candidate pool and only fall back to as a
+        // last resort if no other shape is configured.
+        private string PickSafeShapeType(BoardState board, int x, int y, HashSet<string> excludedShapes)
         {
             _noMatchTypesScratch.Clear();
             for (int i = 0; i < _shapeTypeIds.Count; i++)
             {
-                _noMatchTypesScratch.Add(_shapeTypeIds[i]);
+                string shapeId = _shapeTypeIds[i];
+                if (excludedShapes != null && excludedShapes.Contains(shapeId))
+                {
+                    continue;
+                }
+
+                _noMatchTypesScratch.Add(shapeId);
             }
 
             if (x > 1 &&
@@ -597,7 +648,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
 
             if (_noMatchTypesScratch.Count == 0)
             {
-                return _shapeTypeIds[Random.Range(0, _shapeTypeIds.Count)];
+                return PickRandomShape(excludedShapes);
             }
 
             for (int attempt = 0; attempt < _noMatchTypesScratch.Count; attempt++)
@@ -609,6 +660,28 @@ namespace Gazeus.DesafioMatch3.Gameplay
                 }
 
                 _noMatchTypesScratch.Remove(candidate);
+            }
+
+            return PickRandomShape(excludedShapes);
+        }
+
+        private string PickRandomShape(HashSet<string> excludedShapes)
+        {
+            if (excludedShapes != null && excludedShapes.Count > 0)
+            {
+                _noMatchTypesScratch.Clear();
+                for (int i = 0; i < _shapeTypeIds.Count; i++)
+                {
+                    if (!excludedShapes.Contains(_shapeTypeIds[i]))
+                    {
+                        _noMatchTypesScratch.Add(_shapeTypeIds[i]);
+                    }
+                }
+
+                if (_noMatchTypesScratch.Count > 0)
+                {
+                    return _noMatchTypesScratch[Random.Range(0, _noMatchTypesScratch.Count)];
+                }
             }
 
             return _shapeTypeIds[Random.Range(0, _shapeTypeIds.Count)];
@@ -678,6 +751,9 @@ namespace Gazeus.DesafioMatch3.Gameplay
                 return false;
             }
 
+            // Snapshot the matches before bombs detonate. A bomb only counts as "triggered"
+            // (for VFX/scoring) if it was matched directly, not if it was merely caught in
+            // another bomb's row/column blast, so we compare against this pre-blast state.
             for (int i = 0; i < matchedFlags.Length; i++)
             {
                 _preBombMatchedFlags[i] = matchedFlags[i];
@@ -705,6 +781,8 @@ namespace Gazeus.DesafioMatch3.Gameplay
                     Vector2Int cell = new(x, y);
                     _matchedPositions.Add(cell);
 
+                    // Only bombs that were part of the original match (pre-blast) drive the
+                    // explosion effect; bombs cleared by another bomb's blast are skipped.
                     if (_preBombMatchedFlags[index] && _tiles.IsBomb(board.GetType(x, y)))
                     {
                         _matchedBombsScratch.Add(cell);
@@ -787,7 +865,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
 
         private int CalculateSequenceScore(BoardSequence sequence, int comboIndex)
         {
-            int score = sequence.MatchedPosition.Count * _config.ScorePerPiece;
+            int score = sequence.MatchedPositions.Count * _config.ScorePerPiece;
 
             for (int i = 0; i < sequence.ClearedRows.Count; i++)
             {

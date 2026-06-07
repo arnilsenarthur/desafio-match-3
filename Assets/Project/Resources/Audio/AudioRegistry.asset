@@ -19,8 +19,8 @@ MonoBehaviour:
     - ui.check
     - ui.pause
     - gameplay.game_start
-    - gameplay.gem_select
-    - gameplay.gem_slide
+    - gameplay.tile_select
+    - gameplay.tile_slide
     - gameplay.match
     - gameplay.match_special
     - gameplay.game_over

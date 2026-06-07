@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Gazeus.DesafioMatch3.Gameplay
@@ -7,7 +7,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
     {
         public List<MovedTileInfo> MovedTiles { get; set; }
         public List<AddedTileInfo> AddedTiles { get; set; }
-        public List<Vector2Int> MatchedPosition { get; set; }
+        public List<Vector2Int> MatchedPositions { get; set; }
         public List<Vector2Int> MatchedBombs { get; set; }
         public List<int> ClearedRows { get; set; } = new();
         public List<int> ClearedColumns { get; set; } = new();

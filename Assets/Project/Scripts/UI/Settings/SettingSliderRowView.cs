@@ -79,7 +79,7 @@ namespace Gazeus.DesafioMatch3.UI.Settings
                 return;
             }
 
-            AudioService.PlaySfxRateLimited(AudioKeys.UiCheck, SliderSoundMinInterval);
+            AudioService.PlaySfxRateLimited(AudioKeys.UICheck, SliderSoundMinInterval);
 
             switch (_settingId)
             {

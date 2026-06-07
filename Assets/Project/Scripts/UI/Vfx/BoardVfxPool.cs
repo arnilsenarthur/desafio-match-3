@@ -4,7 +4,7 @@ using UnityEngine.UI;
 
 namespace Gazeus.DesafioMatch3.UI.Vfx
 {
-    public sealed class BoardVfxPool : Pool<BoardVfxKind, PooledUiVfx>
+    public sealed class BoardVfxPool : Pool<BoardVfxKind, PooledUIVfx>
     {
         [SerializeField]
         private int _swapPrewarm = 6;
@@ -50,17 +50,17 @@ namespace Gazeus.DesafioMatch3.UI.Vfx
             _initialized = true;
         }
 
-        public PooledUiVfx Rent(BoardVfxKind kind, Transform parent)
+        public PooledUIVfx Rent(BoardVfxKind kind, Transform parent)
         {
             Initialize();
-            PooledUiVfx instance = Get(kind);
+            PooledUIVfx instance = Get(kind);
             instance.transform.SetParent(parent, false);
             instance.gameObject.layer = parent.gameObject.layer;
             instance.transform.SetAsLastSibling();
             return instance;
         }
 
-        public void Return(PooledUiVfx instance)
+        public void Return(PooledUIVfx instance)
         {
             if (instance == null)
             {
@@ -70,19 +70,19 @@ namespace Gazeus.DesafioMatch3.UI.Vfx
             Release(instance);
         }
 
-        protected override void OnAcquire(PooledUiVfx instance)
+        protected override void OnAcquire(PooledUIVfx instance)
         {
             base.OnAcquire(instance);
             instance.ActivateForUse();
         }
 
-        protected override void OnRelease(PooledUiVfx instance)
+        protected override void OnRelease(PooledUIVfx instance)
         {
             instance.PrepareForPool();
             base.OnRelease(instance);
         }
 
-        protected override bool IsAvailableForAcquire(PooledUiVfx instance) =>
+        protected override bool IsAvailableForAcquire(PooledUIVfx instance) =>
             instance != null && !instance.InUse;
 
         private void TryRegister(BoardVfxKind kind, int prewarmCount)
@@ -99,9 +99,9 @@ namespace Gazeus.DesafioMatch3.UI.Vfx
 
         private static void ValidatePrefab(BoardVfxKind kind, GameObject prefab)
         {
-            if (prefab.GetComponent<PooledUiVfx>() == null)
+            if (prefab.GetComponent<PooledUIVfx>() == null)
             {
-                Debug.LogError($"{prefab.name} is missing {nameof(PooledUiVfx)}.", prefab);
+                Debug.LogError($"{prefab.name} is missing {nameof(PooledUIVfx)}.", prefab);
                 return;
             }
 
@@ -114,12 +114,12 @@ namespace Gazeus.DesafioMatch3.UI.Vfx
             {
                 case BoardVfxKind.Swap:
                 case BoardVfxKind.SpecialSwap:
-                    PooledUiVfx pooled = prefab.GetComponent<PooledUiVfx>();
+                    PooledUIVfx pooled = prefab.GetComponent<PooledUIVfx>();
                     Image image = pooled != null ? pooled.Image : prefab.GetComponent<Image>();
                     if (image == null || pooled == null || !pooled.HasLineSweep)
                     {
                         Debug.LogError(
-                            $"{prefab.name} requires an Image and a shared sweep material assigned on {nameof(PooledUiVfx)}.",
+                            $"{prefab.name} requires an Image and a shared sweep material assigned on {nameof(PooledUIVfx)}.",
                             prefab);
                     }
 

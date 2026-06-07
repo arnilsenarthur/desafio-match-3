@@ -62,7 +62,7 @@ namespace Gazeus.DesafioMatch3.UI.Settings
                 return;
             }
 
-            AudioService.PlaySfx(AudioKeys.UiCheck);
+            AudioService.PlaySfx(AudioKeys.UICheck);
 
             if (_settingId == SettingId.PlayTutorialNextTime)
             {

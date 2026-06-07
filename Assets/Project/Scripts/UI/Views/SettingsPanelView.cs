@@ -4,11 +4,11 @@ using UnityEngine;
 
 namespace Gazeus.DesafioMatch3.UI.Views
 {
-    public class SettingsPanelView : UiPanelView
+    public class SettingsPanelView : UIPanelView
     {
         private SettingRowBase[] _rows;
 
-        protected override string GetOpenSoundKey() => AudioKeys.UiPopup;
+        protected override string GetOpenSoundKey() => AudioKeys.UIPopup;
 
         protected override void OnBeforeShow()
         {

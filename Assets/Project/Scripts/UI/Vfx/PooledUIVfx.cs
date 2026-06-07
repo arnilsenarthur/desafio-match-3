@@ -6,7 +6,7 @@ using UnityEngine.UI;
 namespace Gazeus.DesafioMatch3.UI.Vfx
 {
     [DisallowMultipleComponent]
-    public sealed class PooledUiVfx : MonoBehaviour, IPoolKey<BoardVfxKind>
+    public sealed class PooledUIVfx : MonoBehaviour, IPoolKey<BoardVfxKind>
     {
         private const string SweepProgressProperty = "_SweepProgress";
         private const string DissolveProperty = "_Dissolve";

@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace Gazeus.DesafioMatch3.UI.Views
 {
-    public class ConfirmDialogView : UiPanelView
+    public class ConfirmPanelView : UIPanelView
     {
         public enum ConfirmAction
         {
@@ -30,7 +30,7 @@ namespace Gazeus.DesafioMatch3.UI.Views
         private string _confirmLabelKey;
         private bool _hasActiveContent;
 
-        protected override string GetOpenSoundKey() => AudioKeys.UiPopup;
+        protected override string GetOpenSoundKey() => AudioKeys.UIPopup;
 
         public event Action<ConfirmAction> Confirmed;
 

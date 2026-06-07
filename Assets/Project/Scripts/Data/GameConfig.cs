@@ -15,7 +15,6 @@ namespace Gazeus.DesafioMatch3.Data
         private int _boardHeight = 10;
 
         [Header("Tiles")]
-        [FormerlySerializedAs("_tileTypeRegistry")]
         [SerializeField]
         private TileDefinitions _tiles = new();
 
@@ -68,7 +67,7 @@ namespace Gazeus.DesafioMatch3.Data
 
         [Range(0f, 1f)]
         [SerializeField]
-        private float _bombJokerSpawnChance = 0.02f;
+        private float _bombSpawnChance = 0.02f;
 
         [Range(0f, 1f)]
         [SerializeField]
@@ -97,7 +96,7 @@ namespace Gazeus.DesafioMatch3.Data
         public int TargetScore => _targetScore;
 
         public float JokerSpawnChance => Mathf.Clamp01(_jokerSpawnChance);
-        public float BombJokerSpawnChance => Mathf.Clamp01(_bombJokerSpawnChance);
+        public float BombSpawnChance => Mathf.Clamp01(_bombSpawnChance);
         public float SkullSpawnChance => Mathf.Clamp01(_skullSpawnChance);
         public float SkullTimePenaltySeconds => Mathf.Max(0f, _skullTimePenaltySeconds);
         public TutorialStepDefinition[] TutorialSteps => _tutorialSteps ?? Array.Empty<TutorialStepDefinition>();
@@ -105,7 +104,7 @@ namespace Gazeus.DesafioMatch3.Data
         private void OnValidate()
         {
             _jokerSpawnChance = Mathf.Clamp01(_jokerSpawnChance);
-            _bombJokerSpawnChance = Mathf.Clamp01(_bombJokerSpawnChance);
+            _bombSpawnChance = Mathf.Clamp01(_bombSpawnChance);
             _skullSpawnChance = Mathf.Clamp01(_skullSpawnChance);
         }
 

@@ -7,7 +7,6 @@ namespace Gazeus.DesafioMatch3.Data
     [Serializable]
     public class TileDefinitions
     {
-        [FormerlySerializedAs("_colorTileIds")]
         [SerializeField]
         private string[] _shapeTileIds =
         {

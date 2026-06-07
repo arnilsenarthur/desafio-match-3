@@ -8,7 +8,7 @@ using UnityEngine;
 namespace Gazeus.DesafioMatch3.UI.Controllers
 {
     [DefaultExecutionOrder(0)]
-    public class GameplayUiController : MonoBehaviour
+    public class GameplayUIController : MonoBehaviour
     {
         [SerializeField]
         private GameController _gameController;
@@ -20,13 +20,13 @@ namespace Gazeus.DesafioMatch3.UI.Controllers
         private SettingsPanelView _settingsPanel;
 
         [SerializeField]
-        private ConfirmDialogView _confirmDialog;
+        private ConfirmPanelView _confirmDialog;
 
         [SerializeField]
-        private UiPanelView _gameOverPanel;
+        private UIPanelView _gameOverPanel;
 
         [SerializeField]
-        private GameOverView _gameOverView;
+        private GameOverPanelView _gameOverPanelView;
 
         [SerializeField]
         private GameplayTutorialController _gameplayTutorial;
@@ -46,12 +46,12 @@ namespace Gazeus.DesafioMatch3.UI.Controllers
                 _gameplayTutorial = GetComponent<GameplayTutorialController>();
             }
 
-            ResolveGameOverView();
+            ResolveGameOverPanelView();
             ResolvePanelReferences();
 
-            UiPanelView.HideAllOnLoad(_pausePanel, _confirmDialog, _gameOverPanel);
+            UIPanelView.HideAllOnLoad(_pausePanel, _confirmDialog, _gameOverPanel);
             _settingsPanel?.Hide(animated: false);
-            _gameOverView?.Hide();
+            _gameOverPanelView?.Hide();
         }
 
         private void ResolvePanelReferences()
@@ -68,20 +68,20 @@ namespace Gazeus.DesafioMatch3.UI.Controllers
 
             if (_confirmDialog == null)
             {
-                _confirmDialog = GetComponentInChildren<ConfirmDialogView>(true);
+                _confirmDialog = GetComponentInChildren<ConfirmPanelView>(true);
             }
 
             if (_gameOverPanel == null)
             {
-                ResolveGameOverView();
-                if (_gameOverView != null)
+                ResolveGameOverPanelView();
+                if (_gameOverPanelView != null)
                 {
-                    _gameOverPanel = _gameOverView.GetComponentInParent<UiPanelView>();
+                    _gameOverPanel = _gameOverPanelView.GetComponentInParent<UIPanelView>();
                 }
             }
         }
 
-        private void ShowPanel(UiPanelView panel)
+        private void ShowPanel(UIPanelView panel)
         {
             if (panel == null)
             {
@@ -91,7 +91,7 @@ namespace Gazeus.DesafioMatch3.UI.Controllers
             panel?.Show();
         }
 
-        private void HidePanel(UiPanelView panel, bool animated = true)
+        private void HidePanel(UIPanelView panel, bool animated = true)
         {
             if (panel == null)
             {
@@ -130,7 +130,7 @@ namespace Gazeus.DesafioMatch3.UI.Controllers
         public void PrepareForSessionReset()
         {
             _gameOverVisible = false;
-            _gameOverView?.Hide();
+            _gameOverPanelView?.Hide();
             HidePanel(_gameOverPanel, animated: false);
             HidePanel(_pausePanel, animated: false);
             HidePanel(_settingsPanel, animated: false);
@@ -167,7 +167,7 @@ namespace Gazeus.DesafioMatch3.UI.Controllers
 
             if (_settingsPanel != null && _settingsPanel.IsVisible)
             {
-                AudioService.PlaySfx(AudioKeys.UiClick);
+                AudioService.PlaySfx(AudioKeys.UIClick);
                 HidePanel(_settingsPanel);
                 return;
             }
@@ -212,15 +212,15 @@ namespace Gazeus.DesafioMatch3.UI.Controllers
 
         public void Confirm() => _confirmDialog?.Confirm();
 
-        private void OnConfirmDialogConfirmed(ConfirmDialogView.ConfirmAction action)
+        private void OnConfirmDialogConfirmed(ConfirmPanelView.ConfirmAction action)
         {
             switch (action)
             {
-                case ConfirmDialogView.ConfirmAction.Restart:
+                case ConfirmPanelView.ConfirmAction.Restart:
                     ApplyPause(false);
                     GameService.RestartCurrentGame();
                     break;
-                case ConfirmDialogView.ConfirmAction.MainMenu:
+                case ConfirmPanelView.ConfirmAction.MainMenu:
                     GoToMainMenu();
                     break;
             }
@@ -265,7 +265,7 @@ namespace Gazeus.DesafioMatch3.UI.Controllers
             }
 
             _gameOverVisible = false;
-            _gameOverView?.Hide();
+            _gameOverPanelView?.Hide();
             HidePanel(_gameOverPanel);
             _confirmDialog?.Cancel();
 
@@ -287,7 +287,7 @@ namespace Gazeus.DesafioMatch3.UI.Controllers
             _confirmDialog?.Cancel();
 
             _gameOverVisible = true;
-            ResolveGameOverView();
+            ResolveGameOverPanelView();
 
             string reasonKey = args.Reason switch
             {
@@ -300,19 +300,19 @@ namespace Gazeus.DesafioMatch3.UI.Controllers
             bool isNewHighScore = args.IsNewHighScore;
             int bestScore = HighScoreStorage.Get(difficultyId);
 
-            _gameOverView?.Show(reasonKey, args.FinalScore, bestScore, isNewHighScore);
+            _gameOverPanelView?.Show(reasonKey, args.FinalScore, bestScore, isNewHighScore);
             ShowPanel(_gameOverPanel);
             GameService.LockForGameOver();
         }
 
-        private void ResolveGameOverView()
+        private void ResolveGameOverPanelView()
         {
-            if (_gameOverView != null || _gameOverPanel == null)
+            if (_gameOverPanelView != null || _gameOverPanel == null)
             {
                 return;
             }
 
-            _gameOverView = _gameOverPanel.GetComponentInChildren<GameOverView>(true);
+            _gameOverPanelView = _gameOverPanel.GetComponentInChildren<GameOverPanelView>(true);
         }
 
         private void OnLanguageChanged()
@@ -322,7 +322,7 @@ namespace Gazeus.DesafioMatch3.UI.Controllers
                 return;
             }
 
-            _gameOverView?.RefreshLanguage();
+            _gameOverPanelView?.RefreshLanguage();
         }
     }
 }

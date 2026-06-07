@@ -20,8 +20,8 @@ namespace Gazeus.DesafioMatch3.UI.Views
         private const float TileEnterDuration = 0.5f;
         private const float EnterStagger = 0.05f;
         private const float TileEnterDelay = 0.1f;
-        private const float BoardEnterGemSlideVolume = 0.35f;
-        private const float BoardEnterGemSlideMinInterval = 0.12f;
+        private const float BoardEnterTileSlideVolume = 0.35f;
+        private const float BoardEnterTileSlideMinInterval = 0.12f;
 
         private GameObject[] _tiles;
         private TileSpotView[] _tileSpots;
@@ -85,7 +85,7 @@ namespace Gazeus.DesafioMatch3.UI.Views
 
         public Tween PlayMatchAndDestroyPhases(BoardSequence boardSequence, Action playMatchSound = null)
         {
-            if (boardSequence?.MatchedPosition == null || boardSequence.MatchedPosition.Count == 0)
+            if (boardSequence?.MatchedPositions == null || boardSequence.MatchedPositions.Count == 0)
             {
                 return DOTween.Sequence().AppendInterval(0.01f);
             }
@@ -106,7 +106,7 @@ namespace Gazeus.DesafioMatch3.UI.Views
             popPhase.AppendCallback(() =>
             {
                 RunDestroyMatchedCells(
-                    boardSequence.MatchedPosition,
+                    boardSequence.MatchedPositions,
                     boardSequence.MatchedBombs,
                     isSpecialMatch,
                     popDuration,
@@ -325,7 +325,7 @@ namespace Gazeus.DesafioMatch3.UI.Views
                 float targetScale = _getTargetScale != null ? _getTargetScale(i) : 1f;
                 tile.transform.localScale = Vector3.zero;
                 float tileStartDelay = delay + tileDelay;
-                sequence.InsertCallback(tileStartDelay, PlayBoardEnterGemSlideSound);
+                sequence.InsertCallback(tileStartDelay, PlayBoardEnterTileSlideSound);
                 sequence.Insert(
                     tileStartDelay,
                     tile.transform.DOScale(targetScale, tileDuration).SetEase(Ease.OutBack));
@@ -368,11 +368,11 @@ namespace Gazeus.DesafioMatch3.UI.Views
             return null;
         }
 
-        private static void PlayBoardEnterGemSlideSound() =>
+        private static void PlayBoardEnterTileSlideSound() =>
             AudioService.PlaySfxRateLimited(
-                AudioKeys.GameplayGemSlide,
-                BoardEnterGemSlideMinInterval,
-                BoardEnterGemSlideVolume);
+                AudioKeys.GameplayTileSlide,
+                BoardEnterTileSlideMinInterval,
+                BoardEnterTileSlideVolume);
 
         private void ReleaseTileAt(int index)
         {

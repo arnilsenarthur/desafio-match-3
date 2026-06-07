@@ -15,16 +15,14 @@ MonoBehaviour:
   _titleKey: tutorial.step.match3.title
   _instructionKey: tutorial.step.match3.instruction
   _illustrationSprite: {fileID: 2093613726, guid: 4747a24765656764a8db831a3237c64c, type: 3}
-  _selectOffset: {x: 0, y: 0}
-  _swapOffset: {x: 1, y: 0}
+  _selectOffset: {x: 1, y: 0}
+  _swapOffset: {x: 2, y: 0}
   _cells:
   - _offset: {x: -1, y: 0}
     _typeId: circle
   - _offset: {x: 0, y: 0}
-    _typeId: square
-  - _offset: {x: 1, y: 0}
     _typeId: circle
+  - _offset: {x: 1, y: 0}
+    _typeId: square
   - _offset: {x: 2, y: 0}
     _typeId: circle
-  - _offset: {x: 3, y: 0}
-    _typeId: square

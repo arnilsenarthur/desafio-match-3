@@ -115,7 +115,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 64c4ca2165f97f748a6fb51f7188f49d, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: 
+  m_EditorClassIdentifier: DesafioMatch3::Gazeus.DesafioMatch3.App.SceneTransitionService
   _overlayGroup: {fileID: 8000000015}
   _loadingGroup: {fileID: 8000000023}
 --- !u!1 &8000000011

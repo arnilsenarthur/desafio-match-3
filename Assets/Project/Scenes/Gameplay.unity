@@ -447,14 +447,6 @@ MonoBehaviour:
   _tutorialHints: {fileID: 429446102}
   _tilePool: {fileID: 429446202}
   _vfxPlayer: {fileID: 429446049}
---- !u!222 &429446047
-CanvasRenderer:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 429446041}
-  m_CullTransparentMesh: 0
 --- !u!114 &429446044
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -485,6 +477,14 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!222 &429446047
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 429446041}
+  m_CullTransparentMesh: 0
 --- !u!114 &429446048
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -533,7 +533,7 @@ GameObject:
   - component: {fileID: 429446101}
   - component: {fileID: 429446102}
   m_Layer: 5
-  m_Name: TutorialHints
+  m_Name: TutorialBoardHints
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -570,7 +570,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0c769fc43c804b047bcaee9ada67f3fe, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: 
+  m_EditorClassIdentifier: DesafioMatch3::Gazeus.DesafioMatch3.UI.Views.TutorialBoardHintsView
   _hintArrow: {fileID: 27232527}
 --- !u!1 &429446200
 GameObject:
@@ -1327,7 +1327,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9ed0ba50ecf471c40a3837bf07f3846e, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: 
+  m_EditorClassIdentifier: DesafioMatch3::Gazeus.DesafioMatch3.Gameplay.GameController
   _boardView: {fileID: 429446043}
   _hudView: {fileID: 1018876050}
   _gameConfig: {fileID: 11400000, guid: 1ee9a5173d39d5441a591c86e0eb4f87, type: 2}
@@ -1360,13 +1360,13 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8e4b0d3f2c695e1a0f7b5d9c3e2a1f6b, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: 
+  m_EditorClassIdentifier: DesafioMatch3::Gazeus.DesafioMatch3.UI.Controllers.GameplayUIController
   _gameController: {fileID: 1361904664}
   _pausePanel: {fileID: 3100000004}
   _settingsPanel: {fileID: 3200028005}
   _confirmDialog: {fileID: 3100000074}
   _gameOverPanel: {fileID: 3100000009}
-  _gameOverView: {fileID: 3100000040}
+  _gameOverPanelView: {fileID: 3100000040}
   _gameplayTutorial: {fileID: 1361904667}
 --- !u!114 &1361904667
 MonoBehaviour:
@@ -1379,7 +1379,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f7c2a91e4b8d4e6f9a0b1c2d3e4f5a6b, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: 
+  m_EditorClassIdentifier: DesafioMatch3::Gazeus.DesafioMatch3.UI.Controllers.GameplayTutorialController
   _gameController: {fileID: 1361904664}
   _overlay: {fileID: 3100000340}
 --- !u!114 &1361904668
@@ -1670,7 +1670,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 1361904666}
-        m_TargetAssemblyTypeName: Gazeus.DesafioMatch3.UI.Controllers.GameplayUiController,
+        m_TargetAssemblyTypeName: Gazeus.DesafioMatch3.UI.Controllers.GameplayUIController,
           DesafioMatch3
         m_MethodName: Pause
         m_Mode: 1
@@ -1916,7 +1916,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ae2f5b3c4d5e6f708192a3b4c5d6e7f9, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: 
+  m_EditorClassIdentifier: DesafioMatch3::Gazeus.DesafioMatch3.UI.Views.UIPanelView
 --- !u!114 &3100000040 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 9900000001, guid: ba3de9ba39338bc4587f6e82ad78f01a, type: 3}
@@ -1927,7 +1927,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e7f8a9b0c1d2435a9b0c1d2e3f4a5b6c, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: DesafioMatch3::Gazeus.DesafioMatch3.UI.Views.GameOverView
+  m_EditorClassIdentifier: DesafioMatch3::Gazeus.DesafioMatch3.UI.Views.GameOverPanelView
 --- !u!224 &3100000071 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 6920129527066734540, guid: dd8fbe7d3929f554fba7cc20bca94561, type: 3}
@@ -1943,7 +1943,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a1b2c3d4e5f6478990abcdef01234567, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: 
+  m_EditorClassIdentifier: DesafioMatch3::Gazeus.DesafioMatch3.UI.Views.ConfirmPanelView
 --- !u!1 &3100000101
 GameObject:
   m_ObjectHideFlags: 0
@@ -2096,7 +2096,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b8d4e6f0a1c24395860718293a4b5c6d, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: 
+  m_EditorClassIdentifier: DesafioMatch3::Gazeus.DesafioMatch3.UI.Views.TutorialPanelView
 --- !u!1001 &3200028000
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2129,7 +2129,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c3d4e5f6a7b8490c1d2e3f4a5b6c7d8e, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: 
+  m_EditorClassIdentifier: DesafioMatch3::Gazeus.DesafioMatch3.UI.Views.SettingsPanelView
 --- !u!1001 &9100000200
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2274,7 +2274,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3176703801722506523, guid: d11d31f9221c8c84d9953e8975d8f19e, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
-      value: Gazeus.DesafioMatch3.UI.Controllers.GameplayUiController, DesafioMatch3
+      value: Gazeus.DesafioMatch3.UI.Controllers.GameplayUIController, DesafioMatch3
       objectReference: {fileID: 0}
     - target: {fileID: 3176703801722506523, guid: d11d31f9221c8c84d9953e8975d8f19e, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgumentAssemblyTypeName
@@ -2322,7 +2322,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6145506551911592578, guid: d11d31f9221c8c84d9953e8975d8f19e, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
-      value: Gazeus.DesafioMatch3.UI.Controllers.GameplayUiController, DesafioMatch3
+      value: Gazeus.DesafioMatch3.UI.Controllers.GameplayUIController, DesafioMatch3
       objectReference: {fileID: 0}
     - target: {fileID: 6145506551911592578, guid: d11d31f9221c8c84d9953e8975d8f19e, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgumentAssemblyTypeName
@@ -2358,7 +2358,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6776468621834250841, guid: d11d31f9221c8c84d9953e8975d8f19e, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
-      value: Gazeus.DesafioMatch3.UI.Controllers.GameplayUiController, DesafioMatch3
+      value: Gazeus.DesafioMatch3.UI.Controllers.GameplayUIController, DesafioMatch3
       objectReference: {fileID: 0}
     - target: {fileID: 6776468621834250841, guid: d11d31f9221c8c84d9953e8975d8f19e, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgumentAssemblyTypeName
@@ -2394,7 +2394,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8295093304555845774, guid: d11d31f9221c8c84d9953e8975d8f19e, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
-      value: Gazeus.DesafioMatch3.UI.Controllers.GameplayUiController, DesafioMatch3
+      value: Gazeus.DesafioMatch3.UI.Controllers.GameplayUIController, DesafioMatch3
       objectReference: {fileID: 0}
     - target: {fileID: 8295093304555845774, guid: d11d31f9221c8c84d9953e8975d8f19e, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgumentAssemblyTypeName
@@ -2443,7 +2443,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2012043632485137040, guid: ba3de9ba39338bc4587f6e82ad78f01a, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
-      value: Gazeus.DesafioMatch3.UI.Controllers.GameplayUiController, DesafioMatch3
+      value: Gazeus.DesafioMatch3.UI.Controllers.GameplayUIController, DesafioMatch3
       objectReference: {fileID: 0}
     - target: {fileID: 2012043632485137040, guid: ba3de9ba39338bc4587f6e82ad78f01a, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgumentAssemblyTypeName
@@ -2479,7 +2479,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7102998747374401232, guid: ba3de9ba39338bc4587f6e82ad78f01a, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
-      value: Gazeus.DesafioMatch3.UI.Controllers.GameplayUiController, DesafioMatch3
+      value: Gazeus.DesafioMatch3.UI.Controllers.GameplayUIController, DesafioMatch3
       objectReference: {fileID: 0}
     - target: {fileID: 7102998747374401232, guid: ba3de9ba39338bc4587f6e82ad78f01a, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgumentAssemblyTypeName
@@ -2648,7 +2648,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 642062772412256787, guid: 31eb669218b2220439feb9a97bd0acfb, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
-      value: Gazeus.DesafioMatch3.UI.Controllers.GameplayUiController, DesafioMatch3
+      value: Gazeus.DesafioMatch3.UI.Controllers.GameplayUIController, DesafioMatch3
       objectReference: {fileID: 0}
     - target: {fileID: 642062772412256787, guid: 31eb669218b2220439feb9a97bd0acfb, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgumentAssemblyTypeName
@@ -2999,7 +2999,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5848830075985484398, guid: dd8fbe7d3929f554fba7cc20bca94561, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
-      value: Gazeus.DesafioMatch3.UI.Controllers.GameplayUiController, DesafioMatch3
+      value: Gazeus.DesafioMatch3.UI.Controllers.GameplayUIController, DesafioMatch3
       objectReference: {fileID: 0}
     - target: {fileID: 5848830075985484398, guid: dd8fbe7d3929f554fba7cc20bca94561, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgumentAssemblyTypeName
@@ -3031,7 +3031,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6656012311846064136, guid: dd8fbe7d3929f554fba7cc20bca94561, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
-      value: Gazeus.DesafioMatch3.UI.Controllers.GameplayUiController, DesafioMatch3
+      value: Gazeus.DesafioMatch3.UI.Controllers.GameplayUIController, DesafioMatch3
       objectReference: {fileID: 0}
     - target: {fileID: 6656012311846064136, guid: dd8fbe7d3929f554fba7cc20bca94561, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgumentAssemblyTypeName

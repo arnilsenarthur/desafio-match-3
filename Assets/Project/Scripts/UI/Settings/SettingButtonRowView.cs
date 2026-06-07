@@ -66,7 +66,7 @@ namespace Gazeus.DesafioMatch3.UI.Settings
             }
 
             SelectValue(value);
-            AudioService.PlaySfx(AudioKeys.UiCheck);
+            AudioService.PlaySfx(AudioKeys.UICheck);
             Refresh();
         }
     }

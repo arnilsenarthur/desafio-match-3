@@ -47,7 +47,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
                 return true;
             }
 
-            return HasLinearRunOfAtLeast(sequence.MatchedPosition, SpecialLinearMatchMinimum);
+            return HasLinearRunOfAtLeast(sequence.MatchedPositions, SpecialLinearMatchMinimum);
         }
 
         public static bool HasLinearRunOfAtLeast(IReadOnlyList<Vector2Int> matchedCells, int minimumCount)

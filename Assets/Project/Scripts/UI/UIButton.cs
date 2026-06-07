@@ -41,7 +41,7 @@ namespace Gazeus.DesafioMatch3.UI
         {
             if (IsInteractable())
             {
-                AudioService.PlaySfx(AudioKeys.UiClick);
+                AudioService.PlaySfx(AudioKeys.UIClick);
             }
 
             base.OnPointerClick(eventData);

@@ -131,7 +131,7 @@ GameObject:
   - component: {fileID: 519420031}
   - component: {fileID: 519420029}
   m_Layer: 0
-  m_Name: Main Camera
+  m_Name: MainCamera
   m_TagString: MainCamera
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -766,7 +766,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b2c3d4e5f6a7890123456789abcd0123, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: 
+  m_EditorClassIdentifier: DesafioMatch3::Gazeus.DesafioMatch3.UI.Views.MainMenuPanelView
 --- !u!1 &842896394 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 2964040427054053869, guid: c0d73fa760070e04d92e88a029a75b3d, type: 3}
@@ -830,7 +830,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7f3a9c2e1b584d0f9e6a4c8d2f1b0e5a, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: 
+  m_EditorClassIdentifier: DesafioMatch3::Gazeus.DesafioMatch3.UI.Controllers.MainMenuController
   _mainMenuPanel: {fileID: 842896393}
   _difficultyPanel: {fileID: 2100000014}
   _settingsPanel: {fileID: 3200018005}
@@ -968,7 +968,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c8d9e0f1a2b34395860718293a4b5c7e, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: 
+  m_EditorClassIdentifier: DesafioMatch3::Gazeus.DesafioMatch3.UI.Views.DifficultyPanelView
 --- !u!1001 &3200018000
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1001,7 +1001,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c3d4e5f6a7b8490c1d2e3f4a5b6c7d8e, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: 
+  m_EditorClassIdentifier: DesafioMatch3::Gazeus.DesafioMatch3.UI.Views.SettingsPanelView
 --- !u!1001 &9100000100
 PrefabInstance:
   m_ObjectHideFlags: 0

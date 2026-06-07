@@ -4,8 +4,35 @@ using UnityEngine;
 
 namespace Gazeus.DesafioMatch3.Gameplay
 {
+    // Core match-3 rules. Tiles fall into three families: shapes (circle, square, ...),
+    // wildcards (joker, bomb) and the skull. Two independent rules decide what clears:
+    //
+    //   1) Shape run (>= 3 in a line). Jokers and bombs act as wildcards that stand in
+    //      for the run's anchor shape, so a run is valid with 3 shapes OR 2 shapes + 1
+    //      wildcard. Legend: A/B = shapes, J = joker, * = wildcard (joker or bomb).
+    //
+    //          A A A   -> match (3 shapes)
+    //          A J A   -> match (wildcard fills the gap)
+    //          A A J   -> match (wildcard on the edge)
+    //          A A J A -> match (length 4)
+    //          A B A   -> no match (two different shapes, wildcard can't unify them)
+    //          A A J J -> match, but mixes 2 shapes + 2 wildcards
+    //
+    //   2) Same-type run (>= 3 identical specials in a line). Lets skulls, jokers or
+    //      bombs clear on their own even with no shape present:
+    //
+    //          S S S   -> match (skulls)
+    //          J J J   -> match (jokers)
+    //          B B B   -> match (bombs)
+    //          J B J   -> no match (specials must be the SAME type)
+    //
+    // A run of length >= 4 (rule 1) also queues a full row/column line clear. Bombs that
+    // end up matched additionally detonate their whole row and column (see PropagateBombClears).
     public static class TileMatching
     {
+        // Recomputes every match on the board into matchedFlags. Order matters: shape runs
+        // run first (they may queue line clears), then same-type special runs, then the
+        // queued line clears are expanded into actual matched cells.
         public static bool FindAndMarkMatches(
             BoardState board,
             TileDefinitions tiles,
@@ -24,14 +51,17 @@ namespace Gazeus.DesafioMatch3.Gameplay
 
             ScanShapeRuns(board, tiles, matchedFlags, clearedRows, clearedColumns, horizontal: true);
             ScanShapeRuns(board, tiles, matchedFlags, clearedRows, clearedColumns, horizontal: false);
-            ScanSkullRuns(board, tiles, matchedFlags, horizontal: true);
-            ScanSkullRuns(board, tiles, matchedFlags, horizontal: false);
+            ScanSameTypeSpecialRuns(board, tiles, matchedFlags, horizontal: true);
+            ScanSameTypeSpecialRuns(board, tiles, matchedFlags, horizontal: false);
 
             ApplyLineClears(board, tiles, matchedFlags, clearedRows, clearedColumns);
 
             return HasAnyMatch(board, matchedFlags);
         }
 
+        // Any already-matched bomb detonates its entire row and column. Newly cleared cells
+        // may include further bombs, so the scan repeats until a full pass adds nothing
+        // (chain reactions). Run after FindAndMarkMatches has seeded the initial matches.
         public static void PropagateBombClears(
             BoardState board,
             TileDefinitions tiles,
@@ -112,6 +142,9 @@ namespace Gazeus.DesafioMatch3.Gameplay
             return count;
         }
 
+        // Cheap single-cell test used by board generation/refill to avoid spawning a tile
+        // that would instantly form a match. Checks both axes for a shape run or a same-type
+        // special run passing through this cell.
         public static bool CreatesMatchAt(BoardState board, TileDefinitions tiles, int x, int y)
         {
             if (tiles.IsEmpty(board.GetType(x, y)))
@@ -121,10 +154,13 @@ namespace Gazeus.DesafioMatch3.Gameplay
 
             return MeasureShapeRunThroughCell(board, tiles, x, y, 1, 0) >= 3 ||
                    MeasureShapeRunThroughCell(board, tiles, x, y, 0, 1) >= 3 ||
-                   GetSkullRunLengthAt(board, tiles, x, y, horizontal: true) >= 3 ||
-                   GetSkullRunLengthAt(board, tiles, x, y, horizontal: false) >= 3;
+                   GetSameTypeRunLengthAt(board, tiles, x, y, horizontal: true) >= 3 ||
+                   GetSameTypeRunLengthAt(board, tiles, x, y, horizontal: false) >= 3;
         }
 
+        // Can this cell extend a shape run whose anchor shape is anchorShape (null = not yet
+        // decided)? Empty cells and skulls never fit; wildcards always fit; a real shape fits
+        // only while the anchor is unset or identical to it.
         public static bool FitsInShapeRun(string cellType, string anchorShape, TileDefinitions tiles)
         {
             if (tiles.IsEmpty(cellType) || tiles.IsSkull(cellType))
@@ -147,6 +183,9 @@ namespace Gazeus.DesafioMatch3.Gameplay
 
         private static bool IsWildcard(string typeId, TileDefinitions tiles) =>
             tiles.IsJoker(typeId) || tiles.IsBomb(typeId);
+
+        private static bool IsSpecial(string typeId, TileDefinitions tiles) =>
+            tiles.IsSkull(typeId) || tiles.IsJoker(typeId) || tiles.IsBomb(typeId);
 
         private static bool CanStartShapeRun(string typeId, TileDefinitions tiles) =>
             !tiles.IsEmpty(typeId) && !tiles.IsSkull(typeId) &&
@@ -176,6 +215,8 @@ namespace Gazeus.DesafioMatch3.Gameplay
             }
         }
 
+        // Walks a single row (axisX) or column looking for shape runs. axisX==true means the
+        // line is horizontal and fixedCoord is its y; otherwise it is vertical and fixedCoord is x.
         private static void ScanShapeLine(
             BoardState board,
             TileDefinitions tiles,
@@ -193,6 +234,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
                 int y = axisX ? fixedCoord : index;
                 string type = board.GetType(x, y);
 
+                // Skip cells that can't anchor a run (empty / skull).
                 if (!CanStartShapeRun(type, tiles))
                 {
                     index++;
@@ -212,6 +254,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
 
                 index++;
 
+                // Greedily extend while the next cell still fits the run's anchor shape.
                 while (index < lineLength)
                 {
                     int nx = axisX ? index : fixedCoord;
@@ -232,6 +275,9 @@ namespace Gazeus.DesafioMatch3.Gameplay
                 int endX = axisX ? index - 1 : fixedCoord;
                 int endY = axisX ? fixedCoord : index - 1;
 
+                // A long-enough run still has to satisfy the shape/wildcard ratio (e.g. an
+                // all-wildcard run is rejected here and handled by the same-type scan instead).
+                // On failure, retry from start+1 so a later cell can anchor a different run.
                 if (runLength < 3 ||
                     !IsValidShapeRunSegment(board, tiles, startX, startY, endX, endY, stepX, stepY))
                 {
@@ -246,6 +292,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
                     MarkMatch(board, matchedFlags, mx, my);
                 }
 
+                // 4+ in a line earns a full row/column clear, expanded later in ApplyLineClears.
                 if (runLength >= 4)
                 {
                     AddUnique(lineClears, fixedCoord);
@@ -255,7 +302,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
             }
         }
 
-        private static void ScanSkullRuns(
+        private static void ScanSameTypeSpecialRuns(
             BoardState board,
             TileDefinitions tiles,
             bool[] matchedFlags,
@@ -265,19 +312,21 @@ namespace Gazeus.DesafioMatch3.Gameplay
             {
                 for (int y = 0; y < board.Height; y++)
                 {
-                    ScanSkullLine(board, tiles, matchedFlags, y, axisX: true);
+                    ScanSameTypeSpecialLine(board, tiles, matchedFlags, y, axisX: true);
                 }
             }
             else
             {
                 for (int x = 0; x < board.Width; x++)
                 {
-                    ScanSkullLine(board, tiles, matchedFlags, x, axisX: false);
+                    ScanSameTypeSpecialLine(board, tiles, matchedFlags, x, axisX: false);
                 }
             }
         }
 
-        private static void ScanSkullLine(
+        // Matches runs of >= 3 identical specials (S S S / J J J / B B B). Unlike the shape
+        // scan, the run is held to exact type equality, so mixed specials never combine.
+        private static void ScanSameTypeSpecialLine(
             BoardState board,
             TileDefinitions tiles,
             bool[] matchedFlags,
@@ -291,8 +340,9 @@ namespace Gazeus.DesafioMatch3.Gameplay
             {
                 int x = axisX ? index : fixedCoord;
                 int y = axisX ? fixedCoord : index;
+                string type = board.GetType(x, y);
 
-                if (!tiles.IsSkull(board.GetType(x, y)))
+                if (!IsSpecial(type, tiles))
                 {
                     index++;
                     continue;
@@ -306,7 +356,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
                     int nx = axisX ? index : fixedCoord;
                     int ny = axisX ? fixedCoord : index;
 
-                    if (!tiles.IsSkull(board.GetType(nx, ny)))
+                    if (board.GetType(nx, ny) != type)
                     {
                         break;
                     }
@@ -329,59 +379,47 @@ namespace Gazeus.DesafioMatch3.Gameplay
             }
         }
 
-        private static int GetSkullRunLengthAt(
+        private static int GetSameTypeRunLengthAt(
             BoardState board,
             TileDefinitions tiles,
             int x,
             int y,
             bool horizontal)
         {
-            if (!tiles.IsSkull(board.GetType(x, y)))
+            string type = board.GetType(x, y);
+            if (!IsSpecial(type, tiles))
             {
                 return 0;
             }
 
-            int fixedCoord = horizontal ? y : x;
-            int cellIndex = horizontal ? x : y;
-            int lineLength = horizontal ? board.Width : board.Height;
-            int index = 0;
+            int stepX = horizontal ? 1 : 0;
+            int stepY = horizontal ? 0 : 1;
+            int length = 1;
 
-            while (index < lineLength)
+            int cx = x - stepX;
+            int cy = y - stepY;
+            while (IsInside(board, cx, cy) && board.GetType(cx, cy) == type)
             {
-                int cx = horizontal ? index : fixedCoord;
-                int cy = horizontal ? fixedCoord : index;
-
-                if (!tiles.IsSkull(board.GetType(cx, cy)))
-                {
-                    index++;
-                    continue;
-                }
-
-                int start = index;
-                index++;
-
-                while (index < lineLength)
-                {
-                    int nx = horizontal ? index : fixedCoord;
-                    int ny = horizontal ? fixedCoord : index;
-
-                    if (!tiles.IsSkull(board.GetType(nx, ny)))
-                    {
-                        break;
-                    }
-
-                    index++;
-                }
-
-                if (cellIndex >= start && cellIndex < index)
-                {
-                    return index - start;
-                }
+                length++;
+                cx -= stepX;
+                cy -= stepY;
             }
 
-            return 0;
+            int fx = x + stepX;
+            int fy = y + stepY;
+            while (IsInside(board, fx, fy) && board.GetType(fx, fy) == type)
+            {
+                length++;
+                fx += stepX;
+                fy += stepY;
+            }
+
+            return length;
         }
 
+        // Length of the shape run passing through (x,y) along one axis, or 0 if it isn't a
+        // valid run. Expands outward from the cell in both directions, growing the segment
+        // while neighbours keep fitting the anchor shape.
         private static int MeasureShapeRunThroughCell(
             BoardState board,
             TileDefinitions tiles,
@@ -450,6 +488,8 @@ namespace Gazeus.DesafioMatch3.Gameplay
                 : 0;
         }
 
+        // Tests a cell against the running shape and, on success, locks in the anchor shape
+        // the first time a real shape is seen. Wildcards pass through without setting it.
         private static bool TryIncludeInShapeRun(string type, ref string anchorShape, TileDefinitions tiles)
         {
             if (!FitsInShapeRun(type, anchorShape, tiles))
@@ -472,6 +512,9 @@ namespace Gazeus.DesafioMatch3.Gameplay
             return true;
         }
 
+        // Final gate for a candidate segment: every cell must be a wildcard or a shape equal
+        // to the single anchor shape, and the mix must be either 3+ shapes, or 2+ shapes
+        // backed by at least one wildcard. This is what rejects pure-wildcard segments.
         private static bool IsValidShapeRunSegment(
             BoardState board,
             TileDefinitions tiles,

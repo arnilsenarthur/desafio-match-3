@@ -46,7 +46,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
         private bool _sessionStarted;
         private Coroutine _countdownCoroutine;
         private Transform _boardTweenRoot;
-        private GameplayUiController _gameplayUi;
+        private GameplayUIController _gameplayUi;
         private GameplayAudioController _gameplayAudio;
 
         public GameConfig Config => _gameConfig;
@@ -61,7 +61,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
 
             if (_gameplayUi == null)
             {
-                _gameplayUi = GetComponent<GameplayUiController>();
+                _gameplayUi = GetComponent<GameplayUIController>();
             }
 
             if (_gameplayAudio == null)
@@ -638,7 +638,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
             if (!_boardView.HasSelection)
             {
                 _boardView.SelectCell(cell);
-                AudioService.PlaySfx(AudioKeys.GameplayGemSelect);
+                AudioService.PlaySfx(AudioKeys.GameplayTileSelect);
                 return;
             }
 
@@ -685,7 +685,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
                 _boardView.SetBoardAnimating(true);
             }
 
-            AudioService.PlaySfx(AudioKeys.GameplayGemSlide);
+            AudioService.PlaySfx(AudioKeys.GameplayTileSlide);
 
             Tween swapTween = _boardView.SwapTiles(selectedCell, cell);
             swapTween.SetLink(gameObject, LinkBehaviour.KillOnDestroy);

@@ -904,7 +904,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ae2f5b3c4d5e6f708192a3b4c5d6e7f9, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: 
+  m_EditorClassIdentifier: DesafioMatch3::Gazeus.DesafioMatch3.UI.Views.UIPanelView
   _modal: {fileID: 0}
   _animationDuration: 0.25
   _showScaleFrom: 0.9
@@ -1168,7 +1168,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e7f8a9b0c1d2435a9b0c1d2e3f4a5b6c, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: DesafioMatch3::Gazeus.DesafioMatch3.UI.Views.GameOverView
+  m_EditorClassIdentifier: DesafioMatch3::Gazeus.DesafioMatch3.UI.Views.GameOverPanelView
   _reasonText: {fileID: 7490776282032296358}
   _finalScoreValueText: {fileID: 9900000023}
   _bestScoreValueText: {fileID: 9900000043}

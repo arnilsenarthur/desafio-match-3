@@ -59,7 +59,7 @@ namespace Gazeus.DesafioMatch3.Audio
                 return;
             }
 
-            AudioService.PlaySfx(AudioKeys.UiCheck);
+            AudioService.PlaySfx(AudioKeys.UICheck);
         }
 
         public void PlayMatchStepSound(BoardSequence sequence)

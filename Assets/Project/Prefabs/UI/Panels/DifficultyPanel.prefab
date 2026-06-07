@@ -88,7 +88,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c8d9e0f1a2b34395860718293a4b5c7e, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: 
+  m_EditorClassIdentifier: DesafioMatch3::Gazeus.DesafioMatch3.UI.Views.DifficultyPanelView
   _modal: {fileID: 0}
   _animationDuration: 0.25
   _showScaleFrom: 0.9

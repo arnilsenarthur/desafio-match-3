@@ -2,14 +2,14 @@ namespace Gazeus.DesafioMatch3.Audio
 {
     public static class AudioKeys
     {
-        public const string UiClick = "ui.click";
-        public const string UiPopup = "ui.popup";
-        public const string UiCheck = "ui.check";
-        public const string UiPause = "ui.pause";
-        public const string UiTutorialPage = "ui.tutorial_page";
+        public const string UIClick = "ui.click";
+        public const string UIPopup = "ui.popup";
+        public const string UICheck = "ui.check";
+        public const string UIPause = "ui.pause";
+        public const string UITutorialPage = "ui.tutorial_page";
 
-        public const string GameplayGemSelect = "gameplay.gem_select";
-        public const string GameplayGemSlide = "gameplay.gem_slide";
+        public const string GameplayTileSelect = "gameplay.tile_select";
+        public const string GameplayTileSlide = "gameplay.tile_slide";
         public const string GameplayMatch = "gameplay.match";
         public const string GameplayMatchSpecial = "gameplay.match_special";
         public const string GameplayExplosion = "gameplay.explosion";

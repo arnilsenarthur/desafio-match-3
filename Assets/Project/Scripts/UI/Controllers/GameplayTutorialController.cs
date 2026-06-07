@@ -16,7 +16,7 @@ namespace Gazeus.DesafioMatch3.UI.Controllers
         private GameController _gameController;
 
         [SerializeField]
-        private TutorialOverlayView _overlay;
+        private TutorialPanelView _overlay;
 
         private TutorialStepDefinition[] _steps;
         private int _stepIndex;
@@ -40,7 +40,7 @@ namespace Gazeus.DesafioMatch3.UI.Controllers
 
             if (_overlay == null)
             {
-                _overlay = GetComponentInChildren<TutorialOverlayView>(true);
+                _overlay = GetComponentInChildren<TutorialPanelView>(true);
             }
         }
 
@@ -59,7 +59,7 @@ namespace Gazeus.DesafioMatch3.UI.Controllers
             if (config == null || _overlay == null || _gameController == null)
             {
                 Debug.LogError(
-                    "Tutorial cannot start: assign GameController, TutorialOverlayView on TutorialPanel.");
+                    "Tutorial cannot start: assign GameController, TutorialPanelView on TutorialPanel.");
                 return false;
             }
 
@@ -99,7 +99,7 @@ namespace Gazeus.DesafioMatch3.UI.Controllers
             }
 
             _overlay.ShowIntro(LocKeys.TutorialIntroTitle, LocKeys.TutorialIntroBody);
-            AudioService.PlaySfx(AudioKeys.UiTutorialPage);
+            AudioService.PlaySfx(AudioKeys.UITutorialPage);
             return true;
         }
 

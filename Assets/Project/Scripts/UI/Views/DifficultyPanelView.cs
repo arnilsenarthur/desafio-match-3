@@ -7,12 +7,12 @@ using UnityEngine;
 
 namespace Gazeus.DesafioMatch3.UI.Views
 {
-    public class DifficultyPanelView : UiPanelView
+    public class DifficultyPanelView : UIPanelView
     {
         [SerializeField]
         private RectTransform[] _enterElements;
 
-        protected override string GetOpenSoundKey() => AudioKeys.UiPopup;
+        protected override string GetOpenSoundKey() => AudioKeys.UIPopup;
 
         [SerializeField]
         private Vector2 _slideOffset = new(-120f, 0f);
@@ -84,7 +84,7 @@ namespace Gazeus.DesafioMatch3.UI.Views
                 group.alpha = 0f;
 
                 float delay = i * stagger;
-                sequence.InsertCallback(delay, PlayEnterGemSlideSound);
+                sequence.InsertCallback(delay, PlayEnterTileSlideSound);
                 sequence.Insert(
                     delay,
                     DOTween.To(() => target.anchoredPosition, value => target.anchoredPosition = value, restPosition, duration)
@@ -97,8 +97,8 @@ namespace Gazeus.DesafioMatch3.UI.Views
             _enterTween = sequence.SetLink(gameObject, LinkBehaviour.KillOnDestroy);
         }
 
-        private static void PlayEnterGemSlideSound() =>
-            AudioService.PlaySfx(AudioKeys.GameplayGemSlide);
+        private static void PlayEnterTileSlideSound() =>
+            AudioService.PlaySfx(AudioKeys.GameplayTileSlide);
 
         private void StopEnterAnimation()
         {

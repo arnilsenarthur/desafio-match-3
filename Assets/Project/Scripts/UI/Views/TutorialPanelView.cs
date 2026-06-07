@@ -5,7 +5,7 @@ using UnityEngine.UI;
 
 namespace Gazeus.DesafioMatch3.UI.Views
 {
-    public class TutorialOverlayView : MonoBehaviour
+    public class TutorialPanelView : MonoBehaviour
     {
         [SerializeField]
         private TMP_Text _titleText;

@@ -92,9 +92,9 @@ namespace Gazeus.DesafioMatch3.UI.Vfx
                     isSpecial: true));
             }
 
-            if (sequence.MatchedPosition != null)
+            if (sequence.MatchedPositions != null)
             {
-                foreach (MatchRun run in MatchRunAnalysis.FindRuns(sequence.MatchedPosition))
+                foreach (MatchRun run in MatchRunAnalysis.FindRuns(sequence.MatchedPositions))
                 {
                     if (run.Count < 3 ||
                         IsRunOnClearedLine(run, sequence.ClearedRows, sequence.ClearedColumns))
@@ -168,7 +168,7 @@ namespace Gazeus.DesafioMatch3.UI.Vfx
                 tileRect.DOScale(Vector3.zero, popDuration * 0.38f)
                     .SetEase(Ease.InBack));
 
-            PooledUiVfx vfx = Rent(BoardVfxKind.BombExplosion);
+            PooledUIVfx vfx = Rent(BoardVfxKind.BombExplosion);
             vfx.SetAnchoredPosition(localCenter);
             vfx.RectTransform.localScale = Vector3.one * BombExplosionVisualScale;
             vfx.ResetBurstImages();
@@ -193,7 +193,7 @@ namespace Gazeus.DesafioMatch3.UI.Vfx
                 });
         }
 
-        private Sequence PlayBombBurstImages(PooledUiVfx vfx, float duration)
+        private Sequence PlayBombBurstImages(PooledUIVfx vfx, float duration)
         {
             Sequence sequence = DOTween.Sequence();
             Transform root = vfx.transform;
@@ -276,7 +276,7 @@ namespace Gazeus.DesafioMatch3.UI.Vfx
             float fallbackDuration,
             float spawnDelay = 0f)
         {
-            PooledUiVfx vfx = Rent(kind);
+            PooledUIVfx vfx = Rent(kind);
             vfx.SetAnchoredPosition(localCenter);
             vfx.SetParticleTint(tint);
 
@@ -343,7 +343,7 @@ namespace Gazeus.DesafioMatch3.UI.Vfx
             Color tint,
             BoardVfxKind kind)
         {
-            PooledUiVfx vfx = Rent(kind);
+            PooledUIVfx vfx = Rent(kind);
             vfx.ResetLineSweepMaterial();
 
             Image line = vfx.Image;
@@ -465,7 +465,7 @@ namespace Gazeus.DesafioMatch3.UI.Vfx
             return sequence;
         }
 
-        private static void BindVfxTween(Tween tween, PooledUiVfx vfx)
+        private static void BindVfxTween(Tween tween, PooledUIVfx vfx)
         {
             if (tween == null || vfx == null)
             {
@@ -475,13 +475,13 @@ namespace Gazeus.DesafioMatch3.UI.Vfx
             tween.SetTarget(vfx.gameObject);
         }
 
-        private PooledUiVfx Rent(BoardVfxKind kind)
+        private PooledUIVfx Rent(BoardVfxKind kind)
         {
             EnsurePool();
             return _vfxPool.Rent(kind, _vfxRoot);
         }
 
-        private void Return(PooledUiVfx vfx)
+        private void Return(PooledUIVfx vfx)
         {
             if (_vfxPool == null || vfx == null)
             {
@@ -527,9 +527,9 @@ namespace Gazeus.DesafioMatch3.UI.Vfx
                 }
             }
 
-            if (sequence.MatchedPosition != null)
+            if (sequence.MatchedPositions != null)
             {
-                foreach (MatchRun run in MatchRunAnalysis.FindRuns(sequence.MatchedPosition))
+                foreach (MatchRun run in MatchRunAnalysis.FindRuns(sequence.MatchedPositions))
                 {
                     if (run.Count < 3 ||
                         IsRunOnClearedLine(run, sequence.ClearedRows, sequence.ClearedColumns))

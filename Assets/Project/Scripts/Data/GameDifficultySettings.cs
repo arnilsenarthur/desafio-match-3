@@ -13,7 +13,6 @@ namespace Gazeus.DesafioMatch3.Data
         [SerializeField]
         private float _startingTimeSeconds = 60f;
 
-        [FormerlySerializedAs("_tileTypeCount")]
         [SerializeField]
         private string[] _tileIds = Array.Empty<string>();
 

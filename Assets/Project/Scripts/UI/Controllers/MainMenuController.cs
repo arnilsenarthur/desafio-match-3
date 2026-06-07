@@ -9,7 +9,7 @@ namespace Gazeus.DesafioMatch3.UI.Controllers
     public class MainMenuController : MonoBehaviour
     {
         [SerializeField]
-        private MainMenuView _mainMenuPanel;
+        private MainMenuPanelView _mainMenuPanel;
 
         [SerializeField]
         private DifficultyPanelView _difficultyPanel;
