@@ -244,20 +244,6 @@ namespace Gazeus.DesafioMatch3.Gameplay
             RefreshInteractionState();
         }
 
-        public void RefreshTutorialBoard()
-        {
-            if (!EnsureGameReady())
-            {
-                return;
-            }
-
-            GameService.RegenerateTutorialBaseBoard();
-            _boardView.ClearSelection();
-            _boardView.RebuildFromState(GameService.Board);
-            ClearTutorialGuide();
-            RefreshInteractionState();
-        }
-
         public void ApplyTutorialStep(TutorialStepDefinition step)
         {
             if (!EnsureGameReady())

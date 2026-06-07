@@ -31,6 +31,15 @@ namespace Gazeus.DesafioMatch3.UI.Views
         private Func<int, float> _getTargetScale;
         private BoardVfxPlayer _vfxPlayer;
 
+        private readonly HashSet<Vector2Int> _processedCellsScratch = new();
+        private readonly HashSet<Vector2Int> _bombCellsScratch = new();
+
+        private static readonly Comparison<MovedTileInfo> MoveOrderComparison = static (a, b) =>
+        {
+            int compareY = a.From.y.CompareTo(b.From.y);
+            return compareY != 0 ? compareY : a.From.x.CompareTo(b.From.x);
+        };
+
         public void Bind(
             GameObject[] tiles,
             TileSpotView[] tileSpots,
@@ -109,33 +118,6 @@ namespace Gazeus.DesafioMatch3.UI.Views
             return LinkSequence(step);
         }
 
-        public Tween DestroyTiles(BoardSequence boardSequence)
-        {
-            if (boardSequence?.MatchedPosition == null || boardSequence.MatchedPosition.Count == 0)
-            {
-                return LinkSequence(DOTween.Sequence().AppendInterval(0.01f));
-            }
-
-            bool isSpecialMatch = MatchRunAnalysis.HasSpecialBonusMatch(boardSequence);
-            float popDuration = SettingsService.ScaleDuration(TilePopDuration);
-            bool hasMatchedBombs = boardSequence.MatchedBombs != null && boardSequence.MatchedBombs.Count > 0;
-            float bombDuration = hasMatchedBombs ? SettingsService.ScaleDuration(BombPopDuration) : 0f;
-            float phaseDuration = Mathf.Max(popDuration, bombDuration);
-
-            Sequence sequence = DOTween.Sequence();
-            sequence.AppendCallback(() =>
-            {
-                RunDestroyMatchedCells(
-                    boardSequence.MatchedPosition,
-                    boardSequence.MatchedBombs,
-                    isSpecialMatch,
-                    popDuration,
-                    bombDuration);
-            });
-            sequence.AppendInterval(phaseDuration);
-            return LinkSequence(sequence);
-        }
-
         private void RunDestroyMatchedCells(
             IReadOnlyList<Vector2Int> matchedCells,
             IReadOnlyList<Vector2Int> matchedBombs,
@@ -148,12 +130,12 @@ namespace Gazeus.DesafioMatch3.UI.Views
                 return;
             }
 
-            var processedCells = new HashSet<Vector2Int>();
-            var bombCells = BuildBombCellSet(matchedBombs);
+            _processedCellsScratch.Clear();
+            HashSet<Vector2Int> bombCells = BuildBombCellSet(matchedBombs);
 
             foreach (Vector2Int position in matchedCells)
             {
-                if (!processedCells.Add(position))
+                if (!_processedCellsScratch.Add(position))
                 {
                     continue;
                 }
@@ -180,14 +162,19 @@ namespace Gazeus.DesafioMatch3.UI.Views
             }
         }
 
-        private static HashSet<Vector2Int> BuildBombCellSet(IReadOnlyList<Vector2Int> matchedBombs)
+        private HashSet<Vector2Int> BuildBombCellSet(IReadOnlyList<Vector2Int> matchedBombs)
         {
-            if (matchedBombs == null || matchedBombs.Count == 0)
+            _bombCellsScratch.Clear();
+
+            if (matchedBombs != null)
             {
-                return new HashSet<Vector2Int>();
+                for (int i = 0; i < matchedBombs.Count; i++)
+                {
+                    _bombCellsScratch.Add(matchedBombs[i]);
+                }
             }
 
-            return new HashSet<Vector2Int>(matchedBombs);
+            return _bombCellsScratch;
         }
 
         private void PlayBombDestroyAt(GameObject tile, int index, float duration)
@@ -403,11 +390,7 @@ namespace Gazeus.DesafioMatch3.UI.Views
         private static List<MovedTileInfo> SortMoves(List<MovedTileInfo> moves)
         {
             var sorted = new List<MovedTileInfo>(moves);
-            sorted.Sort(static (a, b) =>
-            {
-                int compareY = a.From.y.CompareTo(b.From.y);
-                return compareY != 0 ? compareY : a.From.x.CompareTo(b.From.x);
-            });
+            sorted.Sort(MoveOrderComparison);
             return sorted;
         }
 

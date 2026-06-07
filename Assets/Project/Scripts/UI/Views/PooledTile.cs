@@ -13,11 +13,5 @@ namespace Gazeus.DesafioMatch3.UI.Views
             get => _poolKey;
             set => _poolKey = value;
         }
-
-        public string TypeId
-        {
-            get => _poolKey;
-            set => _poolKey = value;
-        }
     }
 }

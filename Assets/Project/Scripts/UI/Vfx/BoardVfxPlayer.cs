@@ -35,6 +35,7 @@ namespace Gazeus.DesafioMatch3.UI.Vfx
         private FlexibleGridLayout _grid;
         private RectTransform _boardRect;
         private Canvas _vfxCanvas;
+        private readonly List<Tween> _sweepsScratch = new();
 
         public void Configure(RectTransform boardRect, FlexibleGridLayout grid)
         {
@@ -57,7 +58,8 @@ namespace Gazeus.DesafioMatch3.UI.Vfx
                 return DOTween.Sequence().AppendInterval(0.01f);
             }
 
-            var sweeps = new List<Tween>();
+            List<Tween> sweeps = _sweepsScratch;
+            sweeps.Clear();
             float maxDuration = 0f;
 
             for (int i = 0; i < sequence.ClearedRows.Count; i++)

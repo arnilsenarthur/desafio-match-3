@@ -418,12 +418,6 @@ namespace Gazeus.DesafioMatch3.UI.Vfx
                 }
 
                 renderer.sortingOrder = 10;
-
-                Material material = renderer.sharedMaterial;
-                if (material != null)
-                {
-                    material.DisableKeyword("UNITY_UI_CLIP_RECT");
-                }
             }
         }
 

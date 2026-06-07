@@ -16,6 +16,10 @@ namespace Gazeus.DesafioMatch3.UI.Views
         [SerializeField]
         private Vector2 _spacing;
 
+        private bool _hasCachedMetrics;
+        private Vector2 _cachedCellSize;
+        private Vector2 _cachedParentSize;
+
         public int Rows
         {
             get => _rows;
@@ -76,7 +80,20 @@ namespace Gazeus.DesafioMatch3.UI.Views
                 SetChildAlongAxis(item, 1, yPos, cellHeight);
             }
 
-            LayoutUpdated?.Invoke();
+            var cellSize = new Vector2(cellWidth, cellHeight);
+            var parentSize = new Vector2(parentWidth, parentHeight);
+            bool metricsChanged = !_hasCachedMetrics ||
+                                  cellSize != _cachedCellSize ||
+                                  parentSize != _cachedParentSize;
+
+            _hasCachedMetrics = true;
+            _cachedCellSize = cellSize;
+            _cachedParentSize = parentSize;
+
+            if (metricsChanged)
+            {
+                LayoutUpdated?.Invoke();
+            }
         }
 
         public override void CalculateLayoutInputVertical() { }

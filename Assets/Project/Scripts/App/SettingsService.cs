@@ -19,6 +19,8 @@ namespace Gazeus.DesafioMatch3.App
         private static readonly float[] AnimationSpeedMultipliers = { 0.25f, 0.5f, 1f, 2f, 4f };
 
         private static bool _loaded;
+        private static bool _dirty;
+        private static bool _flushHooksRegistered;
 
         public static event Action<SettingChangedEventArgs> Changed;
 
@@ -36,6 +38,14 @@ namespace Gazeus.DesafioMatch3.App
         private static void ResetOnSubsystemRegistration()
         {
             _loaded = false;
+            _dirty = false;
+            if (_flushHooksRegistered)
+            {
+                Application.focusChanged -= OnApplicationFocusChanged;
+                Application.quitting -= Flush;
+                _flushHooksRegistered = false;
+            }
+
             Changed = null;
             Language = LanguageCodes.Default;
             VfxVolume = 1f;
@@ -85,7 +95,7 @@ namespace Gazeus.DesafioMatch3.App
 
             Language = languageCode;
             PlayerPrefs.SetString(KeyLanguage, languageCode);
-            PlayerPrefs.Save();
+            ScheduleSave();
             LocalizationService.SetLanguage(languageCode);
             RaiseChanged(SettingId.Language);
         }
@@ -101,7 +111,7 @@ namespace Gazeus.DesafioMatch3.App
 
             VfxVolume = clamped;
             PlayerPrefs.SetFloat(KeyVfxVolume, clamped);
-            PlayerPrefs.Save();
+            ScheduleSave();
             RaiseChanged(SettingId.VfxVolume);
         }
 
@@ -116,7 +126,7 @@ namespace Gazeus.DesafioMatch3.App
 
             MusicVolume = clamped;
             PlayerPrefs.SetFloat(KeyMusicVolume, clamped);
-            PlayerPrefs.Save();
+            ScheduleSave();
             RaiseChanged(SettingId.MusicVolume);
         }
 
@@ -131,7 +141,7 @@ namespace Gazeus.DesafioMatch3.App
 
             AnimationSpeed = clamped;
             PlayerPrefs.SetInt(KeyAnimationSpeed, clamped);
-            PlayerPrefs.Save();
+            ScheduleSave();
             RaiseChanged(SettingId.AnimationSpeed);
         }
 
@@ -145,8 +155,41 @@ namespace Gazeus.DesafioMatch3.App
 
             PlayTutorialNextTime = value;
             PlayerPrefs.SetInt(KeyPlayTutorialNextTime, value ? 1 : 0);
-            PlayerPrefs.Save();
+            ScheduleSave();
             RaiseChanged(SettingId.PlayTutorialNextTime);
+        }
+
+        private static void ScheduleSave()
+        {
+            _dirty = true;
+
+            if (_flushHooksRegistered)
+            {
+                return;
+            }
+
+            Application.focusChanged += OnApplicationFocusChanged;
+            Application.quitting += Flush;
+            _flushHooksRegistered = true;
+        }
+
+        private static void OnApplicationFocusChanged(bool hasFocus)
+        {
+            if (!hasFocus)
+            {
+                Flush();
+            }
+        }
+
+        private static void Flush()
+        {
+            if (!_dirty)
+            {
+                return;
+            }
+
+            PlayerPrefs.Save();
+            _dirty = false;
         }
 
         private static void RaiseChanged(SettingId id) => Changed?.Invoke(new SettingChangedEventArgs(id));

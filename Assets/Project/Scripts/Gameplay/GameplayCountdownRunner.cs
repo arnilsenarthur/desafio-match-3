@@ -80,12 +80,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
 
         private static bool IsOwnerAlive(UnityEngine.Object owner)
         {
-            if (owner == null)
-            {
-                return true;
-            }
-
-            return owner != null;
+            return ReferenceEquals(owner, null) || owner != null;
         }
     }
 }

@@ -22,6 +22,9 @@ namespace Gazeus.DesafioMatch3.Gameplay
         private List<int> _clearedColumnsScratch;
         private List<MovedTileInfo> _movedTilesList;
         private List<AddedTileInfo> _addedTilesList;
+        private bool[] _validationFlags;
+        private List<int> _validationRows;
+        private List<int> _validationColumns;
         private readonly List<BoardState> _cascadeBoardSnapshots = new();
         private readonly Dictionary<int, MovedTileInfo> _movedTilesById = new();
         private int _tileCount;
@@ -227,32 +230,6 @@ namespace Gazeus.DesafioMatch3.Gameplay
             return WouldCreateMatchAfterSwap(_board, from, to);
         }
 
-        public void RegenerateTutorialBaseBoard()
-        {
-            const int maxAttempts = 50;
-            _tileCount = 0;
-
-            for (int attempt = 0; attempt < maxAttempts; attempt++)
-            {
-                for (int y = 0; y < _board.Height; y++)
-                {
-                    for (int x = 0; x < _board.Width; x++)
-                    {
-                        Vector2Int cell = BoardCell.At(x, y);
-                        string typeId = PickSafeShapeType(_board, x, y);
-                        _board.Set(cell, _tileCount++, typeId);
-                    }
-                }
-
-                if (!HasImmediateMatches(_board))
-                {
-                    break;
-                }
-            }
-
-            _workingBoard.CopyFrom(_board);
-        }
-
         public void ApplyTutorialStep(TutorialStepDefinition step)
         {
             _activeTutorialStep = step;
@@ -376,10 +353,11 @@ namespace Gazeus.DesafioMatch3.Gameplay
         private bool WouldCreateMatchAfterSwap(BoardState board, Vector2Int from, Vector2Int to)
         {
             board.Swap(from, to);
-            bool[] flags = new bool[board.Width * board.Height];
-            List<int> rows = new();
-            List<int> columns = new();
-            bool valid = TileMatching.FindAndMarkMatches(board, _tiles, flags, rows, columns);
+            System.Array.Clear(_validationFlags, 0, _validationFlags.Length);
+            _validationRows.Clear();
+            _validationColumns.Clear();
+            bool valid = TileMatching.FindAndMarkMatches(
+                board, _tiles, _validationFlags, _validationRows, _validationColumns);
             board.Swap(from, to);
             return valid;
         }
@@ -404,7 +382,18 @@ namespace Gazeus.DesafioMatch3.Gameplay
                 }
             }
 
-            CreateBoard(_board);
+            for (int attempt = 0; attempt < maxAttempts; attempt++)
+            {
+                CreateBoard(_board);
+
+                if (HasValidMovement())
+                {
+                    return;
+                }
+            }
+
+            Debug.LogWarning(
+                "RegenerateBoard could not produce a board with valid moves; using last attempt.");
         }
 
         private List<BoardSequence> SwapTile(Vector2Int from, Vector2Int to)
@@ -664,14 +653,18 @@ namespace Gazeus.DesafioMatch3.Gameplay
             _movedTilesList = new List<MovedTileInfo>(width * height);
             _addedTilesList = new List<AddedTileInfo>(width * height);
             _noMatchTypesScratch = new List<string>(_shapeTypeIds?.Count ?? 4);
+            _validationFlags = new bool[width * height];
+            _validationRows = new List<int>();
+            _validationColumns = new List<int>();
         }
 
         private bool HasImmediateMatches(BoardState board)
         {
-            bool[] flags = new bool[board.Width * board.Height];
-            List<int> rows = new();
-            List<int> columns = new();
-            return FindMatches(board, flags, rows, columns);
+            System.Array.Clear(_validationFlags, 0, _validationFlags.Length);
+            _validationRows.Clear();
+            _validationColumns.Clear();
+            return TileMatching.FindAndMarkMatches(
+                board, _tiles, _validationFlags, _validationRows, _validationColumns);
         }
 
         private bool FindMatches(

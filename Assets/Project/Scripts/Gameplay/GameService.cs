@@ -5,7 +5,6 @@ using UnityEngine;
 
 namespace Gazeus.DesafioMatch3.Gameplay
 {
-    /// <summary>Static gameplay facade: session events and UI-facing entry points. Match logic lives in <see cref="GameState"/>.</summary>
     public static class GameService
     {
         private static GameState _state;
@@ -106,8 +105,6 @@ namespace Gazeus.DesafioMatch3.Gameplay
         public static void EnterTutorialMode() => _state?.EnterTutorialMode();
 
         public static void ExitTutorialMode() => _state?.ExitTutorialMode();
-
-        public static void RegenerateTutorialBaseBoard() => _state?.RegenerateTutorialBaseBoard();
 
         public static void ApplyTutorialStep(TutorialStepDefinition step) => _state?.ApplyTutorialStep(step);
 

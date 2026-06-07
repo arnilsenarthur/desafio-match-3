@@ -45,7 +45,6 @@ namespace Gazeus.DesafioMatch3.UI.Views
         [SerializeField]
         private BoardVfxPlayer _vfxPlayer;
 
-        private TileDefinitions _tileDefinitions;
         private RectTransform _boardRect;
         private bool _tutorialEventsBound;
         private int _hoverIndex = -1;
@@ -101,8 +100,6 @@ namespace Gazeus.DesafioMatch3.UI.Views
             }
 
             _tilePool = tilePool;
-
-            _tileDefinitions = tiles;
 
             if (_vfxPlayer == null)
             {
@@ -238,7 +235,7 @@ namespace Gazeus.DesafioMatch3.UI.Views
                     if (!forceRecreate && currentTile != null)
                     {
                         PooledTile pooled = currentTile.GetComponent<PooledTile>();
-                        if (pooled != null && pooled.TypeId == typeId)
+                        if (pooled != null && pooled.PoolKey == typeId)
                         {
                             _tileSpots[index].SnapTile(currentTile);
                             continue;
@@ -676,12 +673,6 @@ namespace Gazeus.DesafioMatch3.UI.Views
         }
 
         public Tween CreateTile(List<AddedTileInfo> addedTiles) => _animations.CreateTile(addedTiles);
-
-        public Tween PlayMatchStepVfx(BoardSequence boardSequence) =>
-            _vfxPlayer != null ? _vfxPlayer.PlayMatchStep(boardSequence) : DOTween.Sequence().AppendInterval(0.01f);
-
-        public Tween DestroyTiles(BoardSequence boardSequence) =>
-            _animations.DestroyTiles(boardSequence);
 
         public Tween MoveTiles(List<MovedTileInfo> movedTiles) => _animations.MoveTiles(movedTiles);
 

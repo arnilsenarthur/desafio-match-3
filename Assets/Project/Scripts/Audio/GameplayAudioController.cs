@@ -70,7 +70,5 @@ namespace Gazeus.DesafioMatch3.Audio
 
             AudioService.PlaySfx(key);
         }
-
-        public void PlayBombExplosionSound() => AudioService.PlaySfx(AudioKeys.GameplayExplosion);
     }
 }
