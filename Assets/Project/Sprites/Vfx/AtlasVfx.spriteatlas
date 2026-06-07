@@ -90,13 +90,11 @@ SpriteAtlas:
     - {fileID: 2800000, guid: f3e2d3c4b5a69788192033445566778a, type: 3}
     - {fileID: 2800000, guid: b9f4e2d31d5c6b7590f1e3d4c5b6a702, type: 3}
     - {fileID: 2800000, guid: c0a5f3e42e6d7c8601f2e4d5c6b7a803, type: 3}
-    - {fileID: 2800000, guid: a8f3e1d20c4b5a6489f0e2d3c4b5a601, type: 3}
     - {fileID: 2800000, guid: f5e2d3c4b5a69788192033445566778c, type: 3}
     bindAsDefault: 1
     isAtlasV2: 0
     cachedData: {fileID: 0}
     packedSpriteRenderDataKeys:
-    - a8f3e1d20c4b5a6489f0e2d3c4b5a601: 21300000
     - b9f4e2d31d5c6b7590f1e3d4c5b6a702: 21300000
     - f1e2d3c4b5a697881920334455667788: 21300000
     - f2e2d3c4b5a697881920334455667789: 21300000
@@ -106,7 +104,6 @@ SpriteAtlas:
     - c0a5f3e42e6d7c8601f2e4d5c6b7a803: 21300000
   m_MasterAtlas: {fileID: 0}
   m_PackedSprites:
-  - {fileID: 21300000, guid: a8f3e1d20c4b5a6489f0e2d3c4b5a601, type: 3}
   - {fileID: 21300000, guid: b9f4e2d31d5c6b7590f1e3d4c5b6a702, type: 3}
   - {fileID: 21300000, guid: f1e2d3c4b5a697881920334455667788, type: 3}
   - {fileID: 21300000, guid: f2e2d3c4b5a697881920334455667789, type: 3}
@@ -115,7 +112,6 @@ SpriteAtlas:
   - {fileID: 21300000, guid: f5e2d3c4b5a69788192033445566778c, type: 3}
   - {fileID: 21300000, guid: c0a5f3e42e6d7c8601f2e4d5c6b7a803, type: 3}
   m_PackedSpriteNamesToIndex:
-  - TexUiWhiteSquare
   - TexParticleSoftCircle
   - TexExplosionFlash
   - TexExplosionRing

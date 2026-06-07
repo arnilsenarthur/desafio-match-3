@@ -3323,6 +3323,22 @@ PrefabInstance:
       propertyPath: _landscapeTarget
       value: 
       objectReference: {fileID: 173637668}
+    - target: {fileID: 4967073583850730234, guid: 42af968100b38214e991a88ac7de6c0d, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.9914449
+      objectReference: {fileID: 0}
+    - target: {fileID: 4967073583850730234, guid: 42af968100b38214e991a88ac7de6c0d, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0.13052616
+      objectReference: {fileID: 0}
+    - target: {fileID: 4967073583850730234, guid: 42af968100b38214e991a88ac7de6c0d, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: -119.19239
+      objectReference: {fileID: 0}
+    - target: {fileID: 4967073583850730234, guid: 42af968100b38214e991a88ac7de6c0d, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 15
+      objectReference: {fileID: 0}
     - target: {fileID: 5176498808540519691, guid: 42af968100b38214e991a88ac7de6c0d, type: 3}
       propertyPath: m_AnchorMax.y
       value: 0
