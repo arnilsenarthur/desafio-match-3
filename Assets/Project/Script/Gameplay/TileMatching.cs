@@ -29,6 +29,55 @@ namespace Gazeus.DesafioMatch3.Gameplay
 
             ApplyLineClears(board, tiles, matchedFlags, clearedRows, clearedColumns);
 
+            return HasAnyMatch(board, matchedFlags);
+        }
+
+        public static void PropagateBombClears(
+            BoardState board,
+            TileDefinitions tiles,
+            bool[] matchedFlags,
+            List<int> clearedRows,
+            List<int> clearedColumns)
+        {
+            bool changed = true;
+
+            while (changed)
+            {
+                changed = false;
+
+                for (int y = 0; y < board.Height; y++)
+                {
+                    for (int x = 0; x < board.Width; x++)
+                    {
+                        if (!matchedFlags[board.ToIndex(x, y)])
+                        {
+                            continue;
+                        }
+
+                        if (!tiles.IsBomb(board.GetType(x, y)))
+                        {
+                            continue;
+                        }
+
+                        if (MarkEntireRow(board, tiles, matchedFlags, y))
+                        {
+                            changed = true;
+                            AddUnique(clearedRows, y);
+                        }
+
+                        if (MarkEntireColumn(board, tiles, matchedFlags, x))
+                        {
+                            changed = true;
+                            AddUnique(clearedColumns, x);
+                        }
+                    }
+                }
+            }
+        }
+
+        private static bool HasAnyMatch(BoardState board, bool[] matchedFlags)
+        {
+            int cellCount = board.Width * board.Height;
             for (int i = 0; i < cellCount; i++)
             {
                 if (matchedFlags[i])
@@ -74,49 +123,6 @@ namespace Gazeus.DesafioMatch3.Gameplay
                    MeasureShapeRunThroughCell(board, tiles, x, y, 0, 1) >= 3 ||
                    GetSkullRunLengthAt(board, tiles, x, y, horizontal: true) >= 3 ||
                    GetSkullRunLengthAt(board, tiles, x, y, horizontal: false) >= 3;
-        }
-
-        public static void PropagateBombClears(
-            BoardState board,
-            TileDefinitions tiles,
-            bool[] matchedFlags,
-            List<int> clearedRows,
-            List<int> clearedColumns)
-        {
-            bool changed = true;
-
-            while (changed)
-            {
-                changed = false;
-
-                for (int y = 0; y < board.Height; y++)
-                {
-                    for (int x = 0; x < board.Width; x++)
-                    {
-                        if (!matchedFlags[board.ToIndex(x, y)])
-                        {
-                            continue;
-                        }
-
-                        if (!tiles.IsBomb(board.GetType(x, y)))
-                        {
-                            continue;
-                        }
-
-                        if (MarkEntireRow(board, tiles, matchedFlags, y))
-                        {
-                            changed = true;
-                            AddUnique(clearedRows, y);
-                        }
-
-                        if (MarkEntireColumn(board, tiles, matchedFlags, x))
-                        {
-                            changed = true;
-                            AddUnique(clearedColumns, x);
-                        }
-                    }
-                }
-            }
         }
 
         public static bool FitsInShapeRun(string cellType, string anchorShape, TileDefinitions tiles)
@@ -244,6 +250,8 @@ namespace Gazeus.DesafioMatch3.Gameplay
                 {
                     AddUnique(lineClears, fixedCoord);
                 }
+
+                index = start + 1;
             }
         }
 
@@ -515,7 +523,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
                 y += stepY;
             }
 
-            return (shapeCount >= 1 && shapeCount + wildcardCount >= 3) || wildcardCount >= 3;
+            return shapeCount >= 3 || (shapeCount >= 2 && wildcardCount >= 1);
         }
 
         private static int CountCellsBetween(int startX, int startY, int endX, int endY, int stepX, int stepY)

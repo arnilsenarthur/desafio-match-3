@@ -135,6 +135,22 @@ namespace Gazeus.DesafioMatch3.UI.Views
         {
             localPoint = default;
 
+            if (!TryGetCellRectLocal(x, y, out Rect cellRect))
+            {
+                return false;
+            }
+
+            localPoint = cellRect.center;
+            return true;
+        }
+
+        public bool TryGetCellRectLocal(Vector2Int cell, out Rect localRect) =>
+            TryGetCellRectLocal(cell.x, cell.y, out localRect);
+
+        public bool TryGetCellRectLocal(int x, int y, out Rect localRect)
+        {
+            localRect = default;
+
             if (x < 0 || y < 0 || x >= _columns || y >= _rows)
             {
                 return false;
@@ -156,12 +172,17 @@ namespace Gazeus.DesafioMatch3.UI.Views
                 return false;
             }
 
-            float centerFromLeft = padding.left + x * (cellWidth + _spacing.x) + cellWidth * 0.5f;
-            float centerFromTop = padding.top + y * (cellHeight + _spacing.y) + cellHeight * 0.5f;
-            localPoint = new Vector2(
-                centerFromLeft - rect.width * rectTransform.pivot.x,
-                rect.height * (1f - rectTransform.pivot.y) - centerFromTop);
-            return true;
+            float minFromLeft = padding.left + x * (cellWidth + _spacing.x);
+            float maxFromLeft = minFromLeft + cellWidth;
+            float minFromTop = padding.top + y * (cellHeight + _spacing.y);
+            float maxFromTop = minFromTop + cellHeight;
+
+            float minX = minFromLeft - rect.width * rectTransform.pivot.x;
+            float maxX = maxFromLeft - rect.width * rectTransform.pivot.x;
+            float maxY = rect.height * (1f - rectTransform.pivot.y) - minFromTop;
+            float minY = rect.height * (1f - rectTransform.pivot.y) - maxFromTop;
+            localRect = Rect.MinMaxRect(minX, minY, maxX, maxY);
+            return localRect.width > 0f && localRect.height > 0f;
         }
     }
 }

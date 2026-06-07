@@ -198,6 +198,23 @@ namespace Gazeus.DesafioMatch3.UI.Controllers
                 step.ResolveSwapTargetCell(boardWidth, boardHeight));
         }
 
+        public void CancelSession()
+        {
+            StopAdvanceCoroutine();
+
+            IsActive = false;
+            _showingIntro = false;
+            _waitingForStepComplete = false;
+            _stepIndex = 0;
+            _steps = null;
+            _overlay?.Hide();
+
+            if (_gameController != null)
+            {
+                _gameController.SetInteractionLocked(false);
+            }
+        }
+
         private void CompleteTutorial()
         {
             StopAdvanceCoroutine();

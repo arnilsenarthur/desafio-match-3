@@ -15,7 +15,6 @@ namespace Gazeus.DesafioMatch3.Audio
         {
             Unbind();
 
-            GameService.CascadeStep += OnCascadeStep;
             GameService.GameEnded += OnGameEnded;
             GameService.CountdownChanged += OnCountdownChanged;
             GameService.GameStarted += OnGameStarted;
@@ -29,7 +28,6 @@ namespace Gazeus.DesafioMatch3.Audio
                 return;
             }
 
-            GameService.CascadeStep -= OnCascadeStep;
             GameService.GameEnded -= OnGameEnded;
             GameService.CountdownChanged -= OnCountdownChanged;
             GameService.GameStarted -= OnGameStarted;
@@ -64,28 +62,15 @@ namespace Gazeus.DesafioMatch3.Audio
             AudioService.PlaySfx(AudioKeys.UiCheck);
         }
 
-        private void OnCascadeStep(CascadeStepEventArgs args)
+        public void PlayMatchStepSound(BoardSequence sequence)
         {
-            string key = IsSpecialMatch(args.Sequence)
+            string key = MatchRunAnalysis.HasSpecialBonusMatch(sequence)
                 ? AudioKeys.GameplayMatchSpecial
                 : AudioKeys.GameplayMatch;
 
             AudioService.PlaySfx(key);
         }
 
-        private static bool IsSpecialMatch(BoardSequence sequence)
-        {
-            if (sequence == null)
-            {
-                return false;
-            }
-
-            if (sequence.ClearedRows.Count > 0 || sequence.ClearedColumns.Count > 0)
-            {
-                return true;
-            }
-
-            return sequence.MatchedPosition != null && sequence.MatchedPosition.Count >= 4;
-        }
+        public void PlayBombExplosionSound() => AudioService.PlaySfx(AudioKeys.GameplayExplosion);
     }
 }

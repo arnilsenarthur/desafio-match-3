@@ -13,13 +13,16 @@ namespace Gazeus.DesafioMatch3.Gameplay
         private BoardState _board;
         private BoardState _workingBoard;
         private bool[] _matchedFlags;
+        private bool[] _preBombMatchedFlags;
         private List<string> _shapeTypeIds;
         private List<string> _noMatchTypesScratch;
         private List<Vector2Int> _matchedPositions;
+        private List<Vector2Int> _matchedBombsScratch;
         private List<int> _clearedRowsScratch;
         private List<int> _clearedColumnsScratch;
         private List<MovedTileInfo> _movedTilesList;
         private List<AddedTileInfo> _addedTilesList;
+        private readonly List<BoardState> _cascadeBoardSnapshots = new();
         private readonly Dictionary<int, MovedTileInfo> _movedTilesById = new();
         private int _tileCount;
         private int _lastDisplayedTimeSeconds = -1;
@@ -48,8 +51,12 @@ namespace Gazeus.DesafioMatch3.Gameplay
             }
 
             IsGameOver = false;
+            IsTutorialMode = false;
+            TimerPaused = false;
             Score = 0;
             _lastDisplayedTimeSeconds = -1;
+            _activeTutorialStep = null;
+            _cascadeBoardSnapshots.Clear();
 
             _tiles = _config.Tiles;
             if (_tiles == null || !_tiles.IsConfigured)
@@ -83,7 +90,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
 
         public void Tick(float deltaTime)
         {
-            if (IsTutorialMode || IsGameOver || TimerPaused || deltaTime <= 0f)
+            if (IsTutorialMode || IsGameOver || TimerPaused || GameService.IsPaused || deltaTime <= 0f)
             {
                 return;
             }
@@ -99,7 +106,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
 
         public void AdjustTime(float deltaSeconds)
         {
-            if (IsGameOver || deltaSeconds == 0f)
+            if (IsGameOver || deltaSeconds == 0f || TimerPaused || GameService.IsPaused)
             {
                 return;
             }
@@ -187,6 +194,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
             }
 
             Score += sequence.ScoreDelta;
+            ApplyBoardSnapshot(sequence.ComboIndex);
             GameService.NotifyCascadeStep(
                 new CascadeStepEventArgs(sequence, sequence.ComboIndex, sequence.ScoreDelta));
             GameService.NotifyScoreChanged(new ScoreChangedEventArgs(Score, sequence.ScoreDelta));
@@ -205,6 +213,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
         public void ExitTutorialMode()
         {
             IsTutorialMode = false;
+            _activeTutorialStep = null;
         }
 
         public bool IsTutorialSwapValid(Vector2Int from, Vector2Int to)
@@ -407,8 +416,10 @@ namespace Gazeus.DesafioMatch3.Gameplay
 
             _workingBoard.CopyFrom(_board);
             _workingBoard.Swap(from, to);
+            _board.Swap(from, to);
 
             List<BoardSequence> boardSequences = new();
+            _cascadeBoardSnapshots.Clear();
             bool hasMatches = FindMatches(_workingBoard, _matchedFlags, _clearedRowsScratch, _clearedColumnsScratch);
 
             while (hasMatches)
@@ -421,20 +432,8 @@ namespace Gazeus.DesafioMatch3.Gameplay
                     AdjustTime(-skullPenalty);
                 }
 
-                _matchedPositions.Clear();
-                for (int y = 0; y < _workingBoard.Height; y++)
-                {
-                    for (int x = 0; x < _workingBoard.Width; x++)
-                    {
-                        if (!_matchedFlags[_workingBoard.ToIndex(x, y)])
-                        {
-                            continue;
-                        }
-
-                        _matchedPositions.Add(new Vector2Int(x, y));
-                        _workingBoard.Clear(x, y);
-                    }
-                }
+                CollectMatchedPositions(_workingBoard, _matchedFlags);
+                ClearMatchedCells(_workingBoard, _matchedPositions);
 
                 ApplyColumnGravity(_workingBoard);
 
@@ -458,6 +457,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
                 boardSequences.Add(new BoardSequence
                 {
                     MatchedPosition = new List<Vector2Int>(_matchedPositions),
+                    MatchedBombs = new List<Vector2Int>(_matchedBombsScratch),
                     MovedTiles = new List<MovedTileInfo>(_movedTilesList),
                     AddedTiles = new List<AddedTileInfo>(_addedTilesList),
                     ClearedRows = new List<int>(_clearedRowsScratch),
@@ -466,10 +466,10 @@ namespace Gazeus.DesafioMatch3.Gameplay
                     SkullTimePenalty = skullPenalty
                 });
 
+                CaptureCascadeSnapshot();
                 hasMatches = FindMatches(_workingBoard, _matchedFlags, _clearedRowsScratch, _clearedColumnsScratch);
             }
 
-            _board.CopyFrom(_workingBoard);
             return boardSequences;
         }
 
@@ -477,6 +477,8 @@ namespace Gazeus.DesafioMatch3.Gameplay
         {
             _workingBoard.CopyFrom(_board);
             _workingBoard.Swap(from, to);
+            _board.Swap(from, to);
+            _cascadeBoardSnapshots.Clear();
 
             if (!FindMatches(_workingBoard, _matchedFlags, _clearedRowsScratch, _clearedColumnsScratch))
             {
@@ -491,24 +493,13 @@ namespace Gazeus.DesafioMatch3.Gameplay
                 AdjustTime(-skullPenalty);
             }
 
-            _matchedPositions.Clear();
-            for (int y = 0; y < _workingBoard.Height; y++)
-            {
-                for (int x = 0; x < _workingBoard.Width; x++)
-                {
-                    if (!_matchedFlags[_workingBoard.ToIndex(x, y)])
-                    {
-                        continue;
-                    }
-
-                    _matchedPositions.Add(new Vector2Int(x, y));
-                    _workingBoard.Clear(x, y);
-                }
-            }
+            CollectMatchedPositions(_workingBoard, _matchedFlags);
+            ClearMatchedCells(_workingBoard, _matchedPositions);
 
             BoardSequence sequence = new()
             {
                 MatchedPosition = new List<Vector2Int>(_matchedPositions),
+                MatchedBombs = new List<Vector2Int>(_matchedBombsScratch),
                 MovedTiles = new List<MovedTileInfo>(),
                 AddedTiles = new List<AddedTileInfo>(),
                 ClearedRows = new List<int>(_clearedRowsScratch),
@@ -517,8 +508,25 @@ namespace Gazeus.DesafioMatch3.Gameplay
                 SkullTimePenalty = skullPenalty
             };
 
-            _board.CopyFrom(_workingBoard);
+            CaptureCascadeSnapshot();
             return new List<BoardSequence> { sequence };
+        }
+
+        private void CaptureCascadeSnapshot()
+        {
+            var snapshot = new BoardState(_workingBoard.Width, _workingBoard.Height);
+            snapshot.CopyFrom(_workingBoard);
+            _cascadeBoardSnapshots.Add(snapshot);
+        }
+
+        private void ApplyBoardSnapshot(int comboIndex)
+        {
+            if (comboIndex < 0 || comboIndex >= _cascadeBoardSnapshots.Count)
+            {
+                return;
+            }
+
+            _board.CopyFrom(_cascadeBoardSnapshots[comboIndex]);
         }
 
         private string PickSpawnType(BoardState board, int x, int y)
@@ -648,7 +656,9 @@ namespace Gazeus.DesafioMatch3.Gameplay
             _board = new BoardState(width, height);
             _workingBoard = new BoardState(width, height);
             _matchedFlags = new bool[width * height];
+            _preBombMatchedFlags = new bool[width * height];
             _matchedPositions = new List<Vector2Int>(width * height);
+            _matchedBombsScratch = new List<Vector2Int>(8);
             _clearedRowsScratch = new List<int>();
             _clearedColumnsScratch = new List<int>();
             _movedTilesList = new List<MovedTileInfo>(width * height);
@@ -675,13 +685,48 @@ namespace Gazeus.DesafioMatch3.Gameplay
                 return false;
             }
 
-            TileMatching.PropagateBombClears(
-                board,
-                _tiles,
-                matchedFlags,
-                clearedRows,
-                clearedColumns);
+            for (int i = 0; i < matchedFlags.Length; i++)
+            {
+                _preBombMatchedFlags[i] = matchedFlags[i];
+            }
+
+            TileMatching.PropagateBombClears(board, _tiles, matchedFlags, clearedRows, clearedColumns);
             return true;
+        }
+
+        private void CollectMatchedPositions(BoardState board, bool[] matchedFlags)
+        {
+            _matchedPositions.Clear();
+            _matchedBombsScratch.Clear();
+
+            for (int y = 0; y < board.Height; y++)
+            {
+                for (int x = 0; x < board.Width; x++)
+                {
+                    int index = board.ToIndex(x, y);
+                    if (!matchedFlags[index])
+                    {
+                        continue;
+                    }
+
+                    Vector2Int cell = new(x, y);
+                    _matchedPositions.Add(cell);
+
+                    if (_preBombMatchedFlags[index] && _tiles.IsBomb(board.GetType(x, y)))
+                    {
+                        _matchedBombsScratch.Add(cell);
+                    }
+                }
+            }
+        }
+
+        private static void ClearMatchedCells(BoardState board, List<Vector2Int> matchedCells)
+        {
+            for (int i = 0; i < matchedCells.Count; i++)
+            {
+                Vector2Int cell = matchedCells[i];
+                board.Clear(cell.x, cell.y);
+            }
         }
 
         private void ApplyColumnGravity(BoardState board)

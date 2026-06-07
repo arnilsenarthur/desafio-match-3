@@ -69,7 +69,11 @@ namespace Gazeus.DesafioMatch3.Gameplay
                     yield break;
                 }
 
-                elapsed += Time.deltaTime;
+                if (!GameService.IsPaused)
+                {
+                    elapsed += Time.deltaTime;
+                }
+
                 yield return null;
             }
         }

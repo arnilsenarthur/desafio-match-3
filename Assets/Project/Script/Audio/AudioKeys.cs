@@ -12,6 +12,7 @@ namespace Gazeus.DesafioMatch3.Audio
         public const string GameplayGemSlide = "gameplay.gem_slide";
         public const string GameplayMatch = "gameplay.match";
         public const string GameplayMatchSpecial = "gameplay.match_special";
+        public const string GameplayExplosion = "gameplay.explosion";
         public const string GameplayGameStart = "gameplay.game_start";
         public const string GameplayGameOver = "gameplay.game_over";
         public const string GameplayHighScore = "gameplay.high_score";

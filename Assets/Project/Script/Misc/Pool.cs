@@ -13,6 +13,9 @@ namespace Gazeus.DesafioMatch3.Misc
 
         public bool HasPrefabs => _prefabs.Count > 0;
 
+        protected bool TryGetAssignedPrefab(K key, out GameObject prefab) =>
+            _prefabs.TryGetValue(key, out prefab);
+
         public void Register(K key, GameObject prefab, int prewarmCount = 0)
         {
             if (prefab == null)
@@ -39,7 +42,7 @@ namespace Gazeus.DesafioMatch3.Misc
                     $"{nameof(Pool<K, T>)} on '{name}' has no prefab registered for key '{key}'.");
             }
 
-            T instance = TryTakeAvailable(holder) ?? CreateInstance(key, holder, prefab);
+            T instance = TryTakeAvailableInstance(holder) ?? CreateInstance(key, holder, prefab);
             OnAcquire(instance);
             return instance;
         }
@@ -102,7 +105,7 @@ namespace Gazeus.DesafioMatch3.Misc
 
         private static string BuildHolderName(K key) => $"Key_{key}";
 
-        private T TryTakeAvailable(Transform holder)
+        protected virtual T TryTakeAvailableInstance(Transform holder)
         {
             for (int i = holder.childCount - 1; i >= 0; i--)
             {
@@ -113,7 +116,7 @@ namespace Gazeus.DesafioMatch3.Misc
                 }
 
                 T component = child.GetComponent<T>();
-                if (component != null)
+                if (component != null && IsAvailableForAcquire(component))
                 {
                     return component;
                 }
@@ -121,6 +124,8 @@ namespace Gazeus.DesafioMatch3.Misc
 
             return null;
         }
+
+        protected virtual bool IsAvailableForAcquire(T instance) => instance != null;
 
         private T CreateInstance(K key, Transform holder, GameObject prefab)
         {

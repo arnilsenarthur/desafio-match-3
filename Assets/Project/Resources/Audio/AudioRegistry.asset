@@ -28,6 +28,7 @@ MonoBehaviour:
     - ui.tutorial_page
     - music.main_menu
     - music.gameplay
+    - gameplay.explosion
     _values:
     - _clip: {fileID: 8300000, guid: b8aa3f80a9e0ebf4a879b12338ff9bc5, type: 3}
       _isMusic: 0
@@ -70,4 +71,7 @@ MonoBehaviour:
       _volume: 1
     - _clip: {fileID: 8300000, guid: d38773e901955c64799521578f9a6534, type: 3}
       _isMusic: 1
+      _volume: 1
+    - _clip: {fileID: 8300000, guid: 315940dad02a8cf46a0ec22a2dcbe299, type: 3}
+      _isMusic: 0
       _volume: 1

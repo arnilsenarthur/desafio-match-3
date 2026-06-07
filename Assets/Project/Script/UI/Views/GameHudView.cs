@@ -87,6 +87,19 @@ namespace Gazeus.DesafioMatch3.UI.Views
 
         private void OnDestroy() => Unbind();
 
+        public void ResetSessionVisuals()
+        {
+            StopCountdownAnimation(resetVisuals: false);
+            HideCountdownLabel();
+            StopScoreAnimations();
+            _scoreDeltaTween = StopDeltaPopup(_scoreDeltaText, _scoreDeltaTween);
+            _timeDeltaTween = StopDeltaPopup(_timeDeltaText, _timeDeltaTween);
+            _countdownVisible = false;
+            _countdownIsGo = false;
+            _countdownStepNumber = 0;
+            _displayedTimeSeconds = -1;
+        }
+
         public void Unbind()
         {
             if (!_bound)
@@ -296,6 +309,18 @@ namespace Gazeus.DesafioMatch3.UI.Views
 
             _countdownText.transform.localScale = Vector3.one;
             _countdownText.alpha = 1f;
+        }
+
+        private void HideCountdownLabel()
+        {
+            if (_countdownText == null)
+            {
+                return;
+            }
+
+            _countdownText.text = string.Empty;
+            _countdownText.alpha = 0f;
+            _countdownText.transform.localScale = Vector3.one;
         }
 
         private void PlayScoreHeartPulse()

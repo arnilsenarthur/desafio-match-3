@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using DG.Tweening;
 using Gazeus.DesafioMatch3.Data;
 using Gazeus.DesafioMatch3.Gameplay;
+using Gazeus.DesafioMatch3.UI.Vfx;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -40,11 +41,17 @@ namespace Gazeus.DesafioMatch3.UI.Views
 
         [SerializeField]
         private TilePool _tilePool;
+
+        [SerializeField]
+        private BoardVfxPlayer _vfxPlayer;
+
+        private TileDefinitions _tileDefinitions;
         private RectTransform _boardRect;
         private bool _tutorialEventsBound;
         private int _hoverIndex = -1;
         private int _selectedIndex = -1;
         private bool _interactionEnabled = true;
+        private bool _boardAnimating;
         private bool _tutorialGuideActive;
         private Vector2Int _tutorialSelectCell = BoardCell.Invalid;
         private Vector2Int _tutorialSwapTargetCell = BoardCell.Invalid;
@@ -94,6 +101,21 @@ namespace Gazeus.DesafioMatch3.UI.Views
             }
 
             _tilePool = tilePool;
+
+            _tileDefinitions = tiles;
+
+            if (_vfxPlayer == null)
+            {
+                _vfxPlayer = GetComponent<BoardVfxPlayer>();
+            }
+
+            if (_vfxPlayer == null)
+            {
+                Debug.LogError(
+                    "BoardView requires BoardVfxPlayer on the same GameObject. Add it in the Gameplay scene.",
+                    this);
+                return false;
+            }
 
             if (!_tutorialEventsBound)
             {
@@ -274,7 +296,15 @@ namespace Gazeus.DesafioMatch3.UI.Views
                 }
             }
 
-            _animations.Bind(_tiles, _tileSpots, _tilePool, _width, gameObject, GetTargetScaleForIndex);
+            _animations.Bind(
+                _tiles,
+                _tileSpots,
+                _tilePool,
+                _width,
+                gameObject,
+                GetTargetScaleForIndex,
+                _vfxPlayer);
+            _vfxPlayer?.Configure(_boardRect, _boardContainer);
         }
 
         public Tween PlayEnterAnimation() => _animations.PlayEnterAnimation();
@@ -632,10 +662,26 @@ namespace Gazeus.DesafioMatch3.UI.Views
             TileClicked?.Invoke(cell);
         }
 
+        public void SetBoardAnimating(bool animating) => _boardAnimating = animating;
+
+        public Tween PlayCascadeStep(BoardSequence sequence, Action applyStep, Action playMatchSound)
+        {
+            Sequence step = DOTween.Sequence();
+            step.Append(_animations.PlayMatchAndDestroyPhases(sequence, playMatchSound));
+            step.Append(MoveTiles(sequence.MovedTiles));
+            step.Append(CreateTile(sequence.AddedTiles));
+            step.AppendCallback(() => applyStep?.Invoke());
+            step.SetLink(gameObject, LinkBehaviour.KillOnDestroy);
+            return step;
+        }
+
         public Tween CreateTile(List<AddedTileInfo> addedTiles) => _animations.CreateTile(addedTiles);
 
-        public Tween DestroyTiles(List<Vector2Int> matchedPosition) =>
-            _animations.DestroyTiles(matchedPosition);
+        public Tween PlayMatchStepVfx(BoardSequence boardSequence) =>
+            _vfxPlayer != null ? _vfxPlayer.PlayMatchStep(boardSequence) : DOTween.Sequence().AppendInterval(0.01f);
+
+        public Tween DestroyTiles(BoardSequence boardSequence) =>
+            _animations.DestroyTiles(boardSequence);
 
         public Tween MoveTiles(List<MovedTileInfo> movedTiles) => _animations.MoveTiles(movedTiles);
 
@@ -643,7 +689,7 @@ namespace Gazeus.DesafioMatch3.UI.Views
 
         private void OnBoardLayoutUpdated()
         {
-            if (_tiles == null)
+            if (_tiles == null || _boardAnimating)
             {
                 return;
             }

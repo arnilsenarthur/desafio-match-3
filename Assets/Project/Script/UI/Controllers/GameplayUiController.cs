@@ -127,6 +127,16 @@ namespace Gazeus.DesafioMatch3.UI.Controllers
 
         public void SkipTutorial() => _gameplayTutorial?.SkipTutorial();
 
+        public void PrepareForSessionReset()
+        {
+            _gameOverVisible = false;
+            _gameOverView?.Hide();
+            HidePanel(_gameOverPanel, animated: false);
+            HidePanel(_pausePanel, animated: false);
+            HidePanel(_settingsPanel, animated: false);
+            _confirmDialog?.Cancel();
+        }
+
         public void BindGameEvents()
         {
             UnbindGameEvents();
