@@ -11,6 +11,7 @@ namespace Gazeus.DesafioMatch3.Editor
         public const int DefaultPageSize = 20;
         private const float BoxPadding = 6f;
         private const float PagingButtonWidth = 52f;
+        private const float AddButtonWidth = 40f;
 
         public readonly struct ViewMetrics
         {
@@ -50,10 +51,14 @@ namespace Gazeus.DesafioMatch3.Editor
             public float KeyColumnRatio = 0.42f;
             public float MinKeyColumnWidth = 140f;
             public float MaxScrollHeight = 240f;
+            public float RemoveButtonWidth = 20f;
             public string KeyColumnLabel = "Key";
             public string ValueColumnLabel = "Value";
+            public string AddEntryLabel = "Add";
+            public string RemoveEntryLabel = "-";
             public bool ShowSearch = true;
             public bool ShowPaging = true;
+            public bool ShowAddRemove = true;
         }
 
         private static readonly Dictionary<string, State> PropertyStates = new();
@@ -233,13 +238,15 @@ namespace Gazeus.DesafioMatch3.Editor
 
             DrawRowsScrollView(
                 scrollRect,
+                dictionaryProperty,
                 keysProperty,
                 valuesProperty,
                 visibleIndices,
                 pageStart,
                 pageEnd,
                 keyWidth,
-                state);
+                state,
+                options);
 
             rect.y += scrollHeight + EditorGUIUtility.standardVerticalSpacing;
 
@@ -248,8 +255,20 @@ namespace Gazeus.DesafioMatch3.Editor
                 TakeLine(ref rect),
                 filter,
                 metrics,
+                dictionaryProperty,
                 state,
                 options);
+        }
+
+        private static float GetRowContentWidth(Rect scrollRect, float contentHeight)
+        {
+            float width = scrollRect.width;
+            if (contentHeight > scrollRect.height + 0.5f)
+            {
+                width -= GUI.skin.verticalScrollbar.fixedWidth;
+            }
+
+            return Mathf.Max(0f, width);
         }
 
         private static float GetKeyWidth(float totalWidth, Options options)
@@ -265,75 +284,106 @@ namespace Gazeus.DesafioMatch3.Editor
             return line;
         }
 
-        private static void DrawHeaderRect(Rect rect, float keyWidth, Options options)
-        {
-            float lineHeight = EditorGUIUtility.singleLineHeight;
-            EditorGUI.LabelField(
-                new Rect(rect.x, rect.y, keyWidth, lineHeight),
-                options.KeyColumnLabel,
-                EditorStyles.boldLabel);
-            EditorGUI.LabelField(
-                new Rect(rect.x + keyWidth, rect.y, rect.width - keyWidth, lineHeight),
-                options.ValueColumnLabel,
-                EditorStyles.boldLabel);
-        }
-
         private static void DrawFooterRect(
             Rect rect,
             string filter,
             ViewMetrics metrics,
+            SerializedProperty dictionaryProperty,
             State state,
             Options options)
         {
             float lineHeight = EditorGUIUtility.singleLineHeight;
             string footerText = BuildFooterText(filter, metrics.VisibleCount, metrics.TotalCount, state, options);
 
-            if (!options.ShowPaging)
-            {
-                EditorGUI.LabelField(rect, footerText, EditorStyles.miniLabel);
-                return;
-            }
-
             int totalPages = Mathf.Max(1, Mathf.CeilToInt(metrics.VisibleCount / (float)options.PageSize));
             state.Page = Mathf.Clamp(state.Page, 0, totalPages - 1);
 
-            Rect nextRect = new Rect(rect.xMax - PagingButtonWidth, rect.y, PagingButtonWidth, lineHeight);
-            Rect prevRect = new Rect(nextRect.x - PagingButtonWidth - 2f, rect.y, PagingButtonWidth, lineHeight);
-            Rect labelRect = new Rect(rect.x, rect.y, prevRect.x - rect.x - 4f, lineHeight);
+            float rightEdge = rect.xMax;
+            Rect nextRect = default;
+            Rect prevRect = default;
+            Rect addRect = default;
 
+            if (options.ShowPaging)
+            {
+                nextRect = new Rect(rightEdge - PagingButtonWidth, rect.y, PagingButtonWidth, lineHeight);
+                rightEdge = nextRect.x - 2f;
+                prevRect = new Rect(rightEdge - PagingButtonWidth, rect.y, PagingButtonWidth, lineHeight);
+                rightEdge = prevRect.x - 2f;
+            }
+
+            if (options.ShowAddRemove)
+            {
+                addRect = new Rect(rightEdge - AddButtonWidth, rect.y, AddButtonWidth, lineHeight);
+                rightEdge = addRect.x - 4f;
+            }
+
+            Rect labelRect = new Rect(rect.x, rect.y, Mathf.Max(0f, rightEdge - rect.x), lineHeight);
             EditorGUI.LabelField(labelRect, footerText, EditorStyles.miniLabel);
 
-            using (new EditorGUI.DisabledScope(state.Page <= 0))
+            if (options.ShowAddRemove)
             {
-                if (GUI.Button(prevRect, "Prev", EditorStyles.miniButtonLeft))
+                using (new EditorGUI.DisabledScope(!GUI.enabled))
                 {
-                    state.Page--;
+                    if (GUI.Button(addRect, options.AddEntryLabel, EditorStyles.miniButton))
+                    {
+                        AddEntry(dictionaryProperty, state, options);
+                    }
                 }
             }
 
-            using (new EditorGUI.DisabledScope(state.Page >= totalPages - 1))
+            if (options.ShowPaging)
             {
-                if (GUI.Button(nextRect, "Next", EditorStyles.miniButtonRight))
+                using (new EditorGUI.DisabledScope(state.Page <= 0))
                 {
-                    state.Page++;
+                    if (GUI.Button(prevRect, "Prev", EditorStyles.miniButtonLeft))
+                    {
+                        state.Page--;
+                    }
+                }
+
+                using (new EditorGUI.DisabledScope(state.Page >= totalPages - 1))
+                {
+                    if (GUI.Button(nextRect, "Next", EditorStyles.miniButtonRight))
+                    {
+                        state.Page++;
+                    }
                 }
             }
         }
 
+        private static void DrawHeaderRect(Rect rect, float keyWidth, Options options)
+        {
+            float lineHeight = EditorGUIUtility.singleLineHeight;
+            float removeWidth = options.ShowAddRemove ? options.RemoveButtonWidth : 0f;
+            EditorGUI.LabelField(
+                new Rect(rect.x, rect.y, keyWidth, lineHeight),
+                options.KeyColumnLabel,
+                EditorStyles.boldLabel);
+            EditorGUI.LabelField(
+                new Rect(rect.x + keyWidth, rect.y, rect.width - keyWidth - removeWidth, lineHeight),
+                options.ValueColumnLabel,
+                EditorStyles.boldLabel);
+        }
+
         private static void DrawRowsScrollView(
             Rect scrollRect,
+            SerializedProperty dictionaryProperty,
             SerializedProperty keysProperty,
             SerializedProperty valuesProperty,
             List<int> visibleIndices,
             int pageStart,
             int pageEnd,
             float keyWidth,
-            State state)
+            State state,
+            Options options)
         {
             float spacing = EditorGUIUtility.standardVerticalSpacing;
             float contentHeight = GetScrollHeight(valuesProperty, visibleIndices, pageStart, pageEnd);
+            float contentWidth = GetRowContentWidth(scrollRect, contentHeight);
+            float removeWidth = options.ShowAddRemove ? options.RemoveButtonWidth : 0f;
+            float valueWidth = contentWidth - keyWidth - removeWidth;
 
-            Rect viewRect = new Rect(0f, 0f, scrollRect.width - 16f, contentHeight);
+            Rect viewRect = new Rect(0f, 0f, contentWidth, contentHeight);
             state.Scroll = GUI.BeginScrollView(scrollRect, state.Scroll, viewRect);
 
             float y = spacing;
@@ -351,15 +401,250 @@ namespace Gazeus.DesafioMatch3.Editor
                     keyProperty,
                     GUIContent.none);
                 EditorGUI.PropertyField(
-                    new Rect(keyWidth, y, viewRect.width - keyWidth, valueHeight),
+                    new Rect(keyWidth, y, valueWidth, valueHeight),
                     valueProperty,
                     GUIContent.none,
                     true);
+
+                if (options.ShowAddRemove)
+                {
+                    Rect removeRect = new Rect(keyWidth + valueWidth, y, removeWidth, keyLineHeight);
+                    using (new EditorGUI.DisabledScope(!GUI.enabled))
+                    {
+                        if (GUI.Button(removeRect, options.RemoveEntryLabel, EditorStyles.miniButton))
+                        {
+                            RemoveEntry(dictionaryProperty, state, options, arrayIndex);
+                            GUI.EndScrollView();
+                            return;
+                        }
+                    }
+                }
 
                 y += rowHeight + spacing;
             }
 
             GUI.EndScrollView();
+        }
+
+        private static void AddEntry(
+            SerializedProperty dictionaryProperty,
+            State state,
+            Options options)
+        {
+            SerializedProperty keysProperty = dictionaryProperty.FindPropertyRelative("_keys");
+            SerializedProperty valuesProperty = dictionaryProperty.FindPropertyRelative("_values");
+            if (keysProperty == null || valuesProperty == null)
+            {
+                return;
+            }
+
+            SerializedObject serializedObject = dictionaryProperty.serializedObject;
+            serializedObject.Update();
+            RecordUndo(serializedObject, "Add Dictionary Entry");
+
+            int index = keysProperty.arraySize;
+            keysProperty.arraySize++;
+            valuesProperty.arraySize++;
+
+            AssignDefaultKey(keysProperty.GetArrayElementAtIndex(index), keysProperty, index);
+            ResetPropertyToDefault(valuesProperty.GetArrayElementAtIndex(index));
+
+            serializedObject.ApplyModifiedProperties();
+
+            int visibleCount = BuildVisibleIndices(
+                keysProperty,
+                valuesProperty,
+                keysProperty.arraySize,
+                state.SearchFilter?.Trim() ?? string.Empty).Count;
+            int totalPages = Mathf.Max(1, Mathf.CeilToInt(visibleCount / (float)options.PageSize));
+            state.Page = totalPages - 1;
+        }
+
+        private static void RemoveEntry(
+            SerializedProperty dictionaryProperty,
+            State state,
+            Options options,
+            int arrayIndex)
+        {
+            SerializedProperty keysProperty = dictionaryProperty.FindPropertyRelative("_keys");
+            SerializedProperty valuesProperty = dictionaryProperty.FindPropertyRelative("_values");
+            if (keysProperty == null ||
+                valuesProperty == null ||
+                arrayIndex < 0 ||
+                arrayIndex >= keysProperty.arraySize ||
+                arrayIndex >= valuesProperty.arraySize)
+            {
+                return;
+            }
+
+            SerializedObject serializedObject = dictionaryProperty.serializedObject;
+            serializedObject.Update();
+            RecordUndo(serializedObject, "Remove Dictionary Entry");
+
+            keysProperty.DeleteArrayElementAtIndex(arrayIndex);
+            valuesProperty.DeleteArrayElementAtIndex(arrayIndex);
+
+            serializedObject.ApplyModifiedProperties();
+
+            int visibleCount = BuildVisibleIndices(
+                keysProperty,
+                valuesProperty,
+                keysProperty.arraySize,
+                state.SearchFilter?.Trim() ?? string.Empty).Count;
+            int totalPages = Mathf.Max(1, Mathf.CeilToInt(visibleCount / (float)options.PageSize));
+            state.Page = Mathf.Clamp(state.Page, 0, totalPages - 1);
+        }
+
+        private static void RecordUndo(SerializedObject serializedObject, string actionName)
+        {
+            UnityEngine.Object[] targets = serializedObject.targetObjects;
+            if (targets == null || targets.Length == 0)
+            {
+                return;
+            }
+
+            if (targets.Length == 1)
+            {
+                Undo.RecordObject(targets[0], actionName);
+                return;
+            }
+
+            Undo.RecordObjects(targets, actionName);
+        }
+
+        private static void AssignDefaultKey(
+            SerializedProperty keyProperty,
+            SerializedProperty keysProperty,
+            int newIndex)
+        {
+            if (keyProperty.propertyType == SerializedPropertyType.String)
+            {
+                keyProperty.stringValue = GenerateUniqueStringKey(keysProperty, newIndex);
+                return;
+            }
+
+            ResetPropertyToDefault(keyProperty);
+        }
+
+        private static string GenerateUniqueStringKey(SerializedProperty keysProperty, int skipIndex)
+        {
+            const string baseName = "NewEntry";
+            var usedKeys = new HashSet<string>(StringComparer.Ordinal);
+
+            for (int i = 0; i < keysProperty.arraySize; i++)
+            {
+                if (i == skipIndex)
+                {
+                    continue;
+                }
+
+                SerializedProperty keyProperty = keysProperty.GetArrayElementAtIndex(i);
+                if (keyProperty.propertyType != SerializedPropertyType.String)
+                {
+                    continue;
+                }
+
+                string key = keyProperty.stringValue;
+                if (!string.IsNullOrEmpty(key))
+                {
+                    usedKeys.Add(key);
+                }
+            }
+
+            if (!usedKeys.Contains(baseName))
+            {
+                return baseName;
+            }
+
+            for (int suffix = 1; suffix < int.MaxValue; suffix++)
+            {
+                string candidate = $"{baseName}_{suffix}";
+                if (!usedKeys.Contains(candidate))
+                {
+                    return candidate;
+                }
+            }
+
+            return baseName;
+        }
+
+        private static void ResetPropertyToDefault(SerializedProperty property)
+        {
+            if (property == null)
+            {
+                return;
+            }
+
+            switch (property.propertyType)
+            {
+                case SerializedPropertyType.String:
+                    property.stringValue = string.Empty;
+                    return;
+                case SerializedPropertyType.Character:
+                    property.intValue = 0;
+                    return;
+                case SerializedPropertyType.Integer:
+                case SerializedPropertyType.Enum:
+                    property.intValue = 0;
+                    return;
+                case SerializedPropertyType.Boolean:
+                    property.boolValue = false;
+                    return;
+                case SerializedPropertyType.Float:
+                    property.floatValue = 0f;
+                    return;
+                case SerializedPropertyType.Color:
+                    property.colorValue = Color.white;
+                    return;
+                case SerializedPropertyType.ObjectReference:
+                    property.objectReferenceValue = null;
+                    return;
+                case SerializedPropertyType.Vector2:
+                    property.vector2Value = Vector2.zero;
+                    return;
+                case SerializedPropertyType.Vector3:
+                    property.vector3Value = Vector3.zero;
+                    return;
+                case SerializedPropertyType.Vector4:
+                    property.vector4Value = Vector4.zero;
+                    return;
+                case SerializedPropertyType.Rect:
+                    property.rectValue = Rect.zero;
+                    return;
+                case SerializedPropertyType.AnimationCurve:
+                    property.animationCurveValue = AnimationCurve.Constant(0f, 1f, 0f);
+                    return;
+                case SerializedPropertyType.Bounds:
+                    property.boundsValue = new Bounds(Vector3.zero, Vector3.one);
+                    return;
+                case SerializedPropertyType.Quaternion:
+                    property.quaternionValue = Quaternion.identity;
+                    return;
+                case SerializedPropertyType.ExposedReference:
+                    property.exposedReferenceValue = null;
+                    return;
+                case SerializedPropertyType.ManagedReference:
+                    property.managedReferenceValue = null;
+                    return;
+            }
+
+            if (!property.hasVisibleChildren)
+            {
+                return;
+            }
+
+            SerializedProperty iterator = property.Copy();
+            SerializedProperty endProperty = iterator.GetEndProperty();
+            iterator.NextVisible(true);
+
+            while (!SerializedProperty.EqualContents(iterator, endProperty))
+            {
+                ResetPropertyToDefault(iterator);
+                if (!iterator.NextVisible(false))
+                {
+                    break;
+                }
+            }
         }
 
         private static float GetScrollHeight(

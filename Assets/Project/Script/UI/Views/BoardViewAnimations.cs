@@ -4,13 +4,18 @@ using DG.Tweening;
 using Gazeus.DesafioMatch3.App;
 using Gazeus.DesafioMatch3.Audio;
 using Gazeus.DesafioMatch3.Gameplay;
+using Gazeus.DesafioMatch3.UI.Vfx;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace Gazeus.DesafioMatch3.UI.Views
 {
     internal sealed class BoardViewAnimations
     {
         private const float TilePopDuration = 0.2f;
+        private const float SwapSecondsPerTile = 0.08f;
+        private const float BombPopDuration = 0.28f;
+        private const float TileMoveDuration = 0.3f;
         private const float SpotEnterDuration = 0.6f;
         private const float TileEnterDuration = 0.5f;
         private const float EnterStagger = 0.05f;
@@ -24,6 +29,7 @@ namespace Gazeus.DesafioMatch3.UI.Views
         private int _width;
         private GameObject _linkTarget;
         private Func<int, float> _getTargetScale;
+        private BoardVfxPlayer _vfxPlayer;
 
         public void Bind(
             GameObject[] tiles,
@@ -31,7 +37,8 @@ namespace Gazeus.DesafioMatch3.UI.Views
             TilePool tilePool,
             int width,
             GameObject linkTarget,
-            Func<int, float> getTargetScale)
+            Func<int, float> getTargetScale,
+            BoardVfxPlayer vfxPlayer)
         {
             _tiles = tiles;
             _tileSpots = tileSpots;
@@ -39,6 +46,7 @@ namespace Gazeus.DesafioMatch3.UI.Views
             _width = width;
             _linkTarget = linkTarget;
             _getTargetScale = getTargetScale;
+            _vfxPlayer = vfxPlayer;
         }
 
         public void ClearBindings()
@@ -49,12 +57,189 @@ namespace Gazeus.DesafioMatch3.UI.Views
             _width = 0;
             _linkTarget = null;
             _getTargetScale = null;
+            _vfxPlayer = null;
         }
 
         public Tween CreateTile(List<AddedTileInfo> addedTiles)
         {
-            Sequence sequence = DOTween.Sequence();
+            if (addedTiles == null || addedTiles.Count == 0)
+            {
+                return LinkSequence(DOTween.Sequence().AppendInterval(0.01f));
+            }
 
+            float popDuration = SettingsService.ScaleDuration(TilePopDuration);
+            Sequence sequence = DOTween.Sequence();
+            sequence.AppendCallback(() => RunCreateTiles(addedTiles, popDuration));
+            sequence.AppendInterval(popDuration);
+            return LinkSequence(sequence);
+        }
+
+        public Tween PlayMatchAndDestroyPhases(BoardSequence boardSequence, Action playMatchSound = null)
+        {
+            if (boardSequence?.MatchedPosition == null || boardSequence.MatchedPosition.Count == 0)
+            {
+                return DOTween.Sequence().AppendInterval(0.01f);
+            }
+
+            bool isSpecialMatch = MatchRunAnalysis.HasSpecialBonusMatch(boardSequence);
+            float popDuration = SettingsService.ScaleDuration(TilePopDuration);
+            float matchDuration = _vfxPlayer != null
+                ? _vfxPlayer.GetMatchStepDuration(boardSequence)
+                : SettingsService.ScaleDuration(SwapSecondsPerTile * 3f);
+            bool hasMatchedBombs = boardSequence.MatchedBombs != null && boardSequence.MatchedBombs.Count > 0;
+            float bombDuration = hasMatchedBombs ? SettingsService.ScaleDuration(BombPopDuration) : 0f;
+            float phaseDuration = Mathf.Max(popDuration, matchDuration, bombDuration);
+
+            Sequence step = DOTween.Sequence();
+            step.AppendCallback(() => playMatchSound?.Invoke());
+
+            Sequence popPhase = DOTween.Sequence();
+            popPhase.AppendCallback(() =>
+            {
+                RunDestroyMatchedCells(
+                    boardSequence.MatchedPosition,
+                    boardSequence.MatchedBombs,
+                    isSpecialMatch,
+                    popDuration,
+                    bombDuration);
+                _vfxPlayer?.PlayMatchStep(boardSequence);
+            });
+            popPhase.AppendInterval(phaseDuration);
+            step.Append(popPhase);
+            return LinkSequence(step);
+        }
+
+        public Tween DestroyTiles(BoardSequence boardSequence)
+        {
+            if (boardSequence?.MatchedPosition == null || boardSequence.MatchedPosition.Count == 0)
+            {
+                return LinkSequence(DOTween.Sequence().AppendInterval(0.01f));
+            }
+
+            bool isSpecialMatch = MatchRunAnalysis.HasSpecialBonusMatch(boardSequence);
+            float popDuration = SettingsService.ScaleDuration(TilePopDuration);
+            bool hasMatchedBombs = boardSequence.MatchedBombs != null && boardSequence.MatchedBombs.Count > 0;
+            float bombDuration = hasMatchedBombs ? SettingsService.ScaleDuration(BombPopDuration) : 0f;
+            float phaseDuration = Mathf.Max(popDuration, bombDuration);
+
+            Sequence sequence = DOTween.Sequence();
+            sequence.AppendCallback(() =>
+            {
+                RunDestroyMatchedCells(
+                    boardSequence.MatchedPosition,
+                    boardSequence.MatchedBombs,
+                    isSpecialMatch,
+                    popDuration,
+                    bombDuration);
+            });
+            sequence.AppendInterval(phaseDuration);
+            return LinkSequence(sequence);
+        }
+
+        private void RunDestroyMatchedCells(
+            IReadOnlyList<Vector2Int> matchedCells,
+            IReadOnlyList<Vector2Int> matchedBombs,
+            bool isSpecialMatch,
+            float popDuration,
+            float bombDuration)
+        {
+            if (matchedCells == null || matchedCells.Count == 0)
+            {
+                return;
+            }
+
+            var processedCells = new HashSet<Vector2Int>();
+            var bombCells = BuildBombCellSet(matchedBombs);
+
+            foreach (Vector2Int position in matchedCells)
+            {
+                if (!processedCells.Add(position))
+                {
+                    continue;
+                }
+
+                int index = ToIndex(position.x, position.y);
+                GameObject tile = _tiles[index];
+
+                if (tile == null)
+                {
+                    continue;
+                }
+
+                _tiles[index] = null;
+                tile.transform.DOKill(true);
+
+                if (bombCells.Contains(position))
+                {
+                    PlayBombDestroyAt(tile, index, bombDuration > 0f ? bombDuration : popDuration);
+                }
+                else
+                {
+                    PlayRegularDestroyAt(position, tile, isSpecialMatch, popDuration);
+                }
+            }
+        }
+
+        private static HashSet<Vector2Int> BuildBombCellSet(IReadOnlyList<Vector2Int> matchedBombs)
+        {
+            if (matchedBombs == null || matchedBombs.Count == 0)
+            {
+                return new HashSet<Vector2Int>();
+            }
+
+            return new HashSet<Vector2Int>(matchedBombs);
+        }
+
+        private void PlayBombDestroyAt(GameObject tile, int index, float duration)
+        {
+            AudioService.PlaySfx(AudioKeys.GameplayExplosion);
+
+            float targetScale = _getTargetScale != null ? _getTargetScale(index) : tile.transform.localScale.x;
+            if (targetScale <= 0.01f)
+            {
+                targetScale = 1f;
+            }
+
+            RectTransform tileRect = tile.transform as RectTransform;
+
+            if (_vfxPlayer == null || tileRect == null)
+            {
+                tile.transform
+                    .DOScale(0f, duration)
+                    .SetEase(Ease.InBack)
+                    .OnComplete(() => _tilePool.ReleaseObject(tile));
+                return;
+            }
+
+            _vfxPlayer.PlayBombExplosion(
+                tileRect,
+                targetScale,
+                () => _tilePool.ReleaseObject(tile));
+        }
+
+        private void PlayRegularDestroyAt(
+            Vector2Int position,
+            GameObject tile,
+            bool isSpecialMatch,
+            float popDuration)
+        {
+            Sequence destroySequence = DOTween.Sequence();
+            destroySequence.Join(
+                tile.transform
+                    .DOScale(0f, popDuration)
+                    .SetEase(Ease.InBack));
+
+            if (_vfxPlayer != null)
+            {
+                Color? tint = TryGetTileTint(tile);
+                destroySequence.Join(_vfxPlayer.PlayTileRemove(position, tint, isSpecialMatch, popDuration));
+            }
+
+            destroySequence.OnComplete(() => _tilePool.ReleaseObject(tile));
+        }
+
+        private void RunCreateTiles(IReadOnlyList<AddedTileInfo> addedTiles, float popDuration)
+        {
             foreach (AddedTileInfo addedTileInfo in addedTiles)
             {
                 Vector2Int position = addedTileInfo.Position;
@@ -67,40 +252,8 @@ namespace Gazeus.DesafioMatch3.UI.Views
                 _tiles[index] = tile;
 
                 tile.transform.localScale = Vector3.zero;
-                sequence.Join(tile.transform.DOScale(
-                    _getTargetScale(index),
-                    SettingsService.ScaleDuration(TilePopDuration)));
+                tile.transform.DOScale(_getTargetScale(index), popDuration);
             }
-
-            return LinkSequence(sequence);
-        }
-
-        public Tween DestroyTiles(List<Vector2Int> matchedPosition)
-        {
-            Sequence sequence = DOTween.Sequence();
-
-            foreach (Vector2Int position in matchedPosition)
-            {
-                int index = ToIndex(position.x, position.y);
-                GameObject tile = _tiles[index];
-                _tiles[index] = null;
-
-                if (tile == null)
-                {
-                    continue;
-                }
-
-                tile.transform.DOKill(true);
-                sequence.Join(tile.transform.DOScale(0f, SettingsService.ScaleDuration(TilePopDuration))
-                    .OnComplete(() => _tilePool.ReleaseObject(tile)));
-            }
-
-            if (matchedPosition.Count == 0)
-            {
-                sequence.AppendInterval(0.01f);
-            }
-
-            return LinkSequence(sequence);
         }
 
         public Tween MoveTiles(List<MovedTileInfo> movedTiles)
@@ -117,6 +270,14 @@ namespace Gazeus.DesafioMatch3.UI.Views
                 ? SortMoves(movedTiles)
                 : movedTiles;
 
+            float moveDuration = SettingsService.ScaleDuration(TileMoveDuration);
+            sequence.AppendCallback(() => RunMoveTiles(orderedMoves));
+            sequence.AppendInterval(moveDuration);
+            return LinkSequence(sequence);
+        }
+
+        private void RunMoveTiles(IReadOnlyList<MovedTileInfo> orderedMoves)
+        {
             foreach (MovedTileInfo move in orderedMoves)
             {
                 int fromIndex = ToIndex(move.From.x, move.From.y);
@@ -130,10 +291,8 @@ namespace Gazeus.DesafioMatch3.UI.Views
 
                 _tiles[fromIndex] = null;
                 _tiles[toIndex] = tile;
-                sequence.Join(_tileSpots[toIndex].AnimatedSetTile(tile));
+                _tileSpots[toIndex].AnimatedSetTile(tile);
             }
-
-            return LinkSequence(sequence);
         }
 
         public Tween PlayEnterAnimation()
@@ -210,6 +369,16 @@ namespace Gazeus.DesafioMatch3.UI.Views
             (_tiles[toIndex], _tiles[fromIndex]) = (_tiles[fromIndex], _tiles[toIndex]);
 
             return LinkSequence(sequence);
+        }
+
+        private static Color? TryGetTileTint(GameObject tile)
+        {
+            if (tile != null && tile.TryGetComponent(out Image image))
+            {
+                return image.color;
+            }
+
+            return null;
         }
 
         private static void PlayBoardEnterGemSlideSound() =>

@@ -308,12 +308,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
                 yield break;
             }
 
-            _isAnimating = false;
-            _interactionLocked = false;
-            _tutorialAdvancePending = false;
-            SetPaused(false);
-            DOTween.Kill(_boardView.transform, true);
-            ClearTutorialGuide();
+            PrepareSessionReset();
 
             yield return SceneTransitionService.Cover();
 
@@ -328,6 +323,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
 
             yield return PlayBoardEnterAndReveal();
             BeginCountdown();
+            RefreshInteractionState();
         }
 
         public void RestartCurrentGame()
@@ -378,27 +374,17 @@ namespace Gazeus.DesafioMatch3.Gameplay
 
         private IEnumerator RestartGameRoutine(string difficultyId)
         {
-            _isAnimating = false;
-            _interactionLocked = false;
-            _tutorialAdvancePending = false;
-            StopCountdown();
-            SetPaused(false);
+            PrepareSessionReset();
 
             yield return SceneTransitionService.Cover();
 
             if (_boardView != null)
             {
-                DOTween.Kill(_boardView.transform, true);
                 _boardView.ClearBoard();
             }
 
             GameRunContext.Clear();
             GameRunContext.SelectDifficulty(difficultyId);
-
-            if (GameService.IsActive)
-            {
-                GameService.ExitTutorialMode();
-            }
 
             if (!TryBeginRun(difficultyId, startCountdown: false))
             {
@@ -416,6 +402,37 @@ namespace Gazeus.DesafioMatch3.Gameplay
             }
 
             BeginCountdown();
+            RefreshInteractionState();
+        }
+
+        private void PrepareSessionReset()
+        {
+            StopRunningWork();
+
+            _isAnimating = false;
+            _isPaused = false;
+            _interactionLocked = false;
+            _tutorialAdvancePending = false;
+
+            GetTutorialController()?.CancelSession();
+            _gameplayUi?.PrepareForSessionReset();
+            _hudView?.ResetSessionVisuals();
+            ClearTutorialGuide();
+
+            if (_boardView != null)
+            {
+                DOTween.Kill(_boardView.transform, true);
+                _boardView.CancelRunningAnimations();
+                _boardView.SetBoardAnimating(false);
+                _boardView.ClearSelection();
+            }
+
+            if (GameService.IsActive)
+            {
+                GameService.ExitTutorialMode();
+            }
+
+            SyncTimerPaused();
             RefreshInteractionState();
         }
 
@@ -487,11 +504,6 @@ namespace Gazeus.DesafioMatch3.Gameplay
             {
                 StopCoroutine(_countdownCoroutine);
                 _countdownCoroutine = null;
-            }
-
-            if (!_isCountdownActive)
-            {
-                return;
             }
 
             _isCountdownActive = false;
@@ -589,26 +601,30 @@ namespace Gazeus.DesafioMatch3.Gameplay
 
             if (boardSequences == null || boardSequences.Count == 0)
             {
+                _boardView.SetBoardAnimating(false);
                 onComplete?.Invoke();
                 return;
             }
+
+            _boardView.SetBoardAnimating(true);
 
             Sequence sequence = DOTween.Sequence();
             sequence.SetLink(gameObject, LinkBehaviour.KillOnDestroy);
 
             for (int i = 0; i < boardSequences.Count; i++)
             {
-                BoardSequence boardSequence = boardSequences[i];
-                sequence.Append(_boardView.DestroyTiles(boardSequence.MatchedPosition));
-                sequence.AppendCallback(() => GameService.ApplyCascadeStep(boardSequence));
-                sequence.Append(_boardView.MoveTiles(boardSequence.MovedTiles));
-                sequence.Append(_boardView.CreateTile(boardSequence.AddedTiles));
+                BoardSequence step = boardSequences[i];
+                sequence.Append(_boardView.PlayCascadeStep(
+                    step,
+                    () => GameService.ApplyCascadeStep(step),
+                    () => _gameplayAudio?.PlayMatchStepSound(step)));
             }
 
             sequence.OnComplete(() =>
             {
                 if (this)
                 {
+                    _boardView.SetBoardAnimating(false);
                     onComplete?.Invoke();
                 }
             });
@@ -676,6 +692,11 @@ namespace Gazeus.DesafioMatch3.Gameplay
             if (isValid && tutorialPractice)
             {
                 _tutorialAdvancePending = true;
+            }
+
+            if (isValid)
+            {
+                _boardView.SetBoardAnimating(true);
             }
 
             AudioService.PlaySfx(AudioKeys.GameplayGemSlide);

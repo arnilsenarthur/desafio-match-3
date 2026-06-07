@@ -28,14 +28,14 @@ MonoBehaviour:
     _skullId: skull
   _difficulties:
   - _id: easy
-    _startingTimeSeconds: 90
+    _startingTimeSeconds: 60
     _tileIds:
     - circle
     - square
     - pentagon
     - hexagon
   - _id: normal
-    _startingTimeSeconds: 60
+    _startingTimeSeconds: 50
     _tileIds:
     - circle
     - square
@@ -50,9 +50,21 @@ MonoBehaviour:
     - pentagon
     - hexagon
     - triangle
-    - diamond
+    - now we have some issues, some swipes are going outside the board / wrong places.
+      remove the default swipe animation, lets use the special one for any swipe
+      (lets unify having just one swipe). shouldnt be better to have one prefab for
+      vertical and one for horizontal to not have to create new materials and etc...?
+      also, a thing related to it. because of how the trail system Works, a swip
+      that goes further looks longer. the duration of swipe should be defined by
+      speed * tiles length / tilespannow we have some issues, some swipes are going
+      outside the board / wrong places. remove the default swipe animation, lets
+      use the special one for any swipe (lets unify having just one swipe). shouldnt
+      be better to have one prefab for vertical and one for horizontal to not have
+      to create new materials and etc...? also, a thing related to it. because of
+      how the trail system Works, a swip that goes further looks longer. the duration
+      of swipe should be defined by speed * tiles length / tilespan
     - star
-  _timeBonusPerValidSwap: 2
+  _timeBonusPerValidSwap: 1.5
   _delayBeforeCountdown: 0
   _countdownLength: 3
   _countdownStepDuration: 1
@@ -62,8 +74,8 @@ MonoBehaviour:
   _scorePerCellInLineClear: 5
   _cascadeMultiplierStep: 0.5
   _targetScore: 0
-  _jokerSpawnChance: 0.03
-  _bombJokerSpawnChance: 0.02
+  _jokerSpawnChance: 0.05
+  _bombJokerSpawnChance: 0.03
   _skullSpawnChance: 0.02
   _skullTimePenaltySeconds: 5
   _tutorialSteps:

@@ -1,0 +1,128 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!687078895 &4343727234628468602
+SpriteAtlas:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: AtlasVfx
+  m_EditorData:
+    serializedVersion: 2
+    textureSettings:
+      serializedVersion: 2
+      anisoLevel: 1
+      compressionQuality: 50
+      maxTextureSize: 2048
+      textureCompression: 0
+      filterMode: 1
+      generateMipMaps: 0
+      readable: 0
+      crunchedCompression: 0
+      sRGB: 1
+    platformSettings:
+    - serializedVersion: 4
+      m_BuildTarget: DefaultTexturePlatform
+      m_MaxTextureSize: 512
+      m_ResizeAlgorithm: 0
+      m_TextureFormat: -1
+      m_TextureCompression: 1
+      m_CompressionQuality: 50
+      m_CrunchedCompression: 0
+      m_AllowsAlphaSplitting: 0
+      m_Overridden: 0
+      m_IgnorePlatformSupport: 0
+      m_AndroidETC2FallbackOverride: 0
+      m_ForceMaximumCompressionQuality_BC6H_BC7: 0
+    - serializedVersion: 4
+      m_BuildTarget: Standalone
+      m_MaxTextureSize: 512
+      m_ResizeAlgorithm: 0
+      m_TextureFormat: 12
+      m_TextureCompression: 1
+      m_CompressionQuality: 50
+      m_CrunchedCompression: 0
+      m_AllowsAlphaSplitting: 0
+      m_Overridden: 0
+      m_IgnorePlatformSupport: 0
+      m_AndroidETC2FallbackOverride: 0
+      m_ForceMaximumCompressionQuality_BC6H_BC7: 0
+    - serializedVersion: 4
+      m_BuildTarget: Android
+      m_MaxTextureSize: 512
+      m_ResizeAlgorithm: 0
+      m_TextureFormat: 50
+      m_TextureCompression: 1
+      m_CompressionQuality: 100
+      m_CrunchedCompression: 0
+      m_AllowsAlphaSplitting: 0
+      m_Overridden: 1
+      m_IgnorePlatformSupport: 0
+      m_AndroidETC2FallbackOverride: 0
+      m_ForceMaximumCompressionQuality_BC6H_BC7: 0
+    - serializedVersion: 4
+      m_BuildTarget: iOS
+      m_MaxTextureSize: 512
+      m_ResizeAlgorithm: 0
+      m_TextureFormat: 50
+      m_TextureCompression: 1
+      m_CompressionQuality: 100
+      m_CrunchedCompression: 0
+      m_AllowsAlphaSplitting: 0
+      m_Overridden: 1
+      m_IgnorePlatformSupport: 0
+      m_AndroidETC2FallbackOverride: 0
+      m_ForceMaximumCompressionQuality_BC6H_BC7: 0
+    packingSettings:
+      serializedVersion: 2
+      padding: 4
+      blockOffset: 1
+      allowAlphaSplitting: 0
+      enableRotation: 1
+      enableTightPacking: 1
+      enableAlphaDilation: 0
+    secondaryTextureSettings: {}
+    variantMultiplier: 1
+    packables:
+    - {fileID: 2800000, guid: f1e2d3c4b5a697881920334455667788, type: 3}
+    - {fileID: 2800000, guid: f2e2d3c4b5a697881920334455667789, type: 3}
+    - {fileID: 2800000, guid: f4e2d3c4b5a69788192033445566778b, type: 3}
+    - {fileID: 2800000, guid: f3e2d3c4b5a69788192033445566778a, type: 3}
+    - {fileID: 2800000, guid: b9f4e2d31d5c6b7590f1e3d4c5b6a702, type: 3}
+    - {fileID: 2800000, guid: c0a5f3e42e6d7c8601f2e4d5c6b7a803, type: 3}
+    - {fileID: 2800000, guid: a8f3e1d20c4b5a6489f0e2d3c4b5a601, type: 3}
+    - {fileID: 2800000, guid: f5e2d3c4b5a69788192033445566778c, type: 3}
+    bindAsDefault: 1
+    isAtlasV2: 0
+    cachedData: {fileID: 0}
+    packedSpriteRenderDataKeys:
+    - a8f3e1d20c4b5a6489f0e2d3c4b5a601: 21300000
+    - b9f4e2d31d5c6b7590f1e3d4c5b6a702: 21300000
+    - f1e2d3c4b5a697881920334455667788: 21300000
+    - f2e2d3c4b5a697881920334455667789: 21300000
+    - f3e2d3c4b5a69788192033445566778a: 21300000
+    - f4e2d3c4b5a69788192033445566778b: 21300000
+    - f5e2d3c4b5a69788192033445566778c: 21300000
+    - c0a5f3e42e6d7c8601f2e4d5c6b7a803: 21300000
+  m_MasterAtlas: {fileID: 0}
+  m_PackedSprites:
+  - {fileID: 21300000, guid: a8f3e1d20c4b5a6489f0e2d3c4b5a601, type: 3}
+  - {fileID: 21300000, guid: b9f4e2d31d5c6b7590f1e3d4c5b6a702, type: 3}
+  - {fileID: 21300000, guid: f1e2d3c4b5a697881920334455667788, type: 3}
+  - {fileID: 21300000, guid: f2e2d3c4b5a697881920334455667789, type: 3}
+  - {fileID: 21300000, guid: f3e2d3c4b5a69788192033445566778a, type: 3}
+  - {fileID: 21300000, guid: f4e2d3c4b5a69788192033445566778b, type: 3}
+  - {fileID: 21300000, guid: f5e2d3c4b5a69788192033445566778c, type: 3}
+  - {fileID: 21300000, guid: c0a5f3e42e6d7c8601f2e4d5c6b7a803, type: 3}
+  m_PackedSpriteNamesToIndex:
+  - TexUiWhiteSquare
+  - TexParticleSoftCircle
+  - TexExplosionFlash
+  - TexExplosionRing
+  - TexExplosionSpark
+  - TexExplosionShard
+  - TexExplosionSmoke
+  - TexParticleSpark
+  m_RenderDataMap: {}
+  m_Tag: AtlasVfx
+  m_IsVariant: 0
