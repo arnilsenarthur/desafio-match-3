@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using DG.Tweening;
 using Gazeus.DesafioMatch3.App;
+using Gazeus.DesafioMatch3.Audio;
 using Gazeus.DesafioMatch3.Gameplay;
 using UnityEngine;
 
@@ -14,6 +15,8 @@ namespace Gazeus.DesafioMatch3.UI.Views
         private const float TileEnterDuration = 0.5f;
         private const float EnterStagger = 0.05f;
         private const float TileEnterDelay = 0.1f;
+        private const float BoardEnterGemSlideVolume = 0.35f;
+        private const float BoardEnterGemSlideMinInterval = 0.12f;
 
         private GameObject[] _tiles;
         private TileSpotView[] _tileSpots;
@@ -175,8 +178,10 @@ namespace Gazeus.DesafioMatch3.UI.Views
 
                 float targetScale = _getTargetScale != null ? _getTargetScale(i) : 1f;
                 tile.transform.localScale = Vector3.zero;
+                float tileStartDelay = delay + tileDelay;
+                sequence.InsertCallback(tileStartDelay, PlayBoardEnterGemSlideSound);
                 sequence.Insert(
-                    delay + tileDelay,
+                    tileStartDelay,
                     tile.transform.DOScale(targetScale, tileDuration).SetEase(Ease.OutBack));
             }
 
@@ -206,6 +211,12 @@ namespace Gazeus.DesafioMatch3.UI.Views
 
             return LinkSequence(sequence);
         }
+
+        private static void PlayBoardEnterGemSlideSound() =>
+            AudioService.PlaySfxRateLimited(
+                AudioKeys.GameplayGemSlide,
+                BoardEnterGemSlideMinInterval,
+                BoardEnterGemSlideVolume);
 
         private void ReleaseTileAt(int index)
         {

@@ -1,5 +1,6 @@
 using System.Collections;
 using Gazeus.DesafioMatch3.App;
+using Gazeus.DesafioMatch3.Audio;
 using Gazeus.DesafioMatch3.UI.Views;
 using UnityEngine;
 
@@ -28,6 +29,8 @@ namespace Gazeus.DesafioMatch3.UI.Controllers
 
         private IEnumerator StartRoutine()
         {
+            AudioService.PlayMusic(AudioKeys.MusicMainMenu);
+
             yield return null;
             ShowMainMenu();
 

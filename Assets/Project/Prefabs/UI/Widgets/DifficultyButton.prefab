@@ -86,7 +86,7 @@ GameObject:
   - component: {fileID: 3306506120155023560}
   - component: {fileID: 2427449265893444994}
   - component: {fileID: 8586985325868460896}
-  - component: {fileID: 1701846908948844350}
+  - component: {fileID: 3789292467413191257}
   m_Layer: 5
   m_Name: DifficultyButton
   m_TagString: Untagged
@@ -153,7 +153,7 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 0.92
---- !u!114 &1701846908948844350
+--- !u!114 &3789292467413191257
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -162,9 +162,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 4814976958615161303}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
+  m_Script: {fileID: 11500000, guid: d0b2ee7810a64fb46bf459a2e506050e, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Button
+  m_EditorClassIdentifier: DesafioMatch3::Gazeus.DesafioMatch3.UI.UIButton
   m_Navigation:
     m_Mode: 3
     m_WrapAround: 0
@@ -196,20 +196,10 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 8586985325868460896}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 0}
-        m_TargetAssemblyTypeName: Gazeus.DesafioMatch3.UI.Controllers.MainMenuController,
-          DesafioMatch3
-        m_MethodName: StartGame
-        m_Mode: 5
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: easy
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
+  _defaultSprite: {fileID: -3027036644532977447, guid: 7680facb9db90e04c9b6eea0a7da7bf6, type: 3}
+  _pressedSprite: {fileID: -3027036644532977447, guid: 7680facb9db90e04c9b6eea0a7da7bf6, type: 3}
+  _pressedOffset: {x: 0, y: -4}
 --- !u!1 &6564065298321717337
 GameObject:
   m_ObjectHideFlags: 0

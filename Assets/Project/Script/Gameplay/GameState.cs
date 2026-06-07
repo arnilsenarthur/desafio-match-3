@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Gazeus.DesafioMatch3.App;
 using Gazeus.DesafioMatch3.Data;
 using UnityEngine;
 
@@ -173,18 +174,27 @@ namespace Gazeus.DesafioMatch3.Gameplay
                 BoardSequence sequence = sequences[i];
                 sequence.ComboIndex = i;
                 sequence.ScoreDelta = CalculateSequenceScore(sequence, i);
-
-                Score += sequence.ScoreDelta;
-                GameService.NotifyCascadeStep(new CascadeStepEventArgs(sequence, i, sequence.ScoreDelta));
-                GameService.NotifyScoreChanged(new ScoreChangedEventArgs(Score, sequence.ScoreDelta));
             }
+
+            return sequences;
+        }
+
+        public void ApplyCascadeStep(BoardSequence sequence)
+        {
+            if (sequence == null)
+            {
+                return;
+            }
+
+            Score += sequence.ScoreDelta;
+            GameService.NotifyCascadeStep(
+                new CascadeStepEventArgs(sequence, sequence.ComboIndex, sequence.ScoreDelta));
+            GameService.NotifyScoreChanged(new ScoreChangedEventArgs(Score, sequence.ScoreDelta));
 
             if (!IsTutorialMode && _config.TargetScore > 0 && Score >= _config.TargetScore)
             {
                 EndGame(GameEndReason.TargetScoreReached);
             }
-
-            return sequences;
         }
 
         public void EnterTutorialMode()
@@ -763,7 +773,10 @@ namespace Gazeus.DesafioMatch3.Gameplay
             }
 
             IsGameOver = true;
-            GameService.NotifyGameEnded(new GameEndedEventArgs(reason, Score, TimeRemaining));
+            bool isNewHighScore = HighScoreStorage.TrySetHighScore(
+                GameRunContext.SelectedDifficultyId,
+                Score);
+            GameService.NotifyGameEnded(new GameEndedEventArgs(reason, Score, TimeRemaining, isNewHighScore));
         }
     }
 }

@@ -1,0 +1,73 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f1a2b3c4d5e6478990abcdef12345678, type: 3}
+  m_Name: AudioRegistry
+  m_EditorClassIdentifier: DesafioMatch3::Gazeus.DesafioMatch3.Audio.AudioRegistryAsset
+  _entries:
+    _keys:
+    - ui.click
+    - ui.popup
+    - ui.check
+    - ui.pause
+    - gameplay.game_start
+    - gameplay.gem_select
+    - gameplay.gem_slide
+    - gameplay.match
+    - gameplay.match_special
+    - gameplay.game_over
+    - gameplay.high_score
+    - ui.tutorial_page
+    - music.main_menu
+    - music.gameplay
+    _values:
+    - _clip: {fileID: 8300000, guid: b8aa3f80a9e0ebf4a879b12338ff9bc5, type: 3}
+      _isMusic: 0
+      _volume: 1
+    - _clip: {fileID: 8300000, guid: 5831ad0a48bc95649b470064a92e8571, type: 3}
+      _isMusic: 0
+      _volume: 1
+    - _clip: {fileID: 8300000, guid: 4e76f4b30e8efe842ae57bd4905473bc, type: 3}
+      _isMusic: 0
+      _volume: 1
+    - _clip: {fileID: 8300000, guid: b9020ed5d589dae49ba7df30a1549fd5, type: 3}
+      _isMusic: 0
+      _volume: 1
+    - _clip: {fileID: 8300000, guid: 41b2397c589f5bf49aa1e37e03390263, type: 3}
+      _isMusic: 0
+      _volume: 1
+    - _clip: {fileID: 8300000, guid: a5d0e0edb7636044393fee89c5c05cd4, type: 3}
+      _isMusic: 0
+      _volume: 1
+    - _clip: {fileID: 8300000, guid: 8ca2ab070d81f774da5423970c5c2472, type: 3}
+      _isMusic: 0
+      _volume: 1
+    - _clip: {fileID: 8300000, guid: b458327fd0a625b46af0209587330b43, type: 3}
+      _isMusic: 0
+      _volume: 1
+    - _clip: {fileID: 8300000, guid: eba62c84d7512d746be8e9c5b6b930ad, type: 3}
+      _isMusic: 0
+      _volume: 1
+    - _clip: {fileID: 8300000, guid: 44dffd0e7bacafa47939cd63bc0aae8a, type: 3}
+      _isMusic: 0
+      _volume: 1
+    - _clip: {fileID: 8300000, guid: f48e8f59b7eeac343ac4c7ad16cfba76, type: 3}
+      _isMusic: 0
+      _volume: 1
+    - _clip: {fileID: 8300000, guid: 9663beb34d934c544b5090408b2692a4, type: 3}
+      _isMusic: 0
+      _volume: 1
+    - _clip: {fileID: 8300000, guid: 773136de6d64a654f9786e7117a1c081, type: 3}
+      _isMusic: 1
+      _volume: 1
+    - _clip: {fileID: 8300000, guid: d38773e901955c64799521578f9a6534, type: 3}
+      _isMusic: 1
+      _volume: 1

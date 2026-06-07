@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using DG.Tweening;
 using Gazeus.DesafioMatch3.App;
+using Gazeus.DesafioMatch3.Audio;
 using Gazeus.DesafioMatch3.Data;
 using Gazeus.DesafioMatch3.UI.Controllers;
 using Gazeus.DesafioMatch3.UI.Views;
@@ -45,6 +46,8 @@ namespace Gazeus.DesafioMatch3.Gameplay
         private bool _sessionStarted;
         private Coroutine _countdownCoroutine;
         private Transform _boardTweenRoot;
+        private GameplayUiController _gameplayUi;
+        private GameplayAudioController _gameplayAudio;
 
         public GameConfig Config => _gameConfig;
         public bool IsPaused => _isPaused;
@@ -54,6 +57,16 @@ namespace Gazeus.DesafioMatch3.Gameplay
             if (_gameplayTutorial == null)
             {
                 _gameplayTutorial = GetComponent<GameplayTutorialController>();
+            }
+
+            if (_gameplayUi == null)
+            {
+                _gameplayUi = GetComponent<GameplayUiController>();
+            }
+
+            if (_gameplayAudio == null)
+            {
+                _gameplayAudio = GetComponent<GameplayAudioController>();
             }
 
             _boardTweenRoot = _boardView != null ? _boardView.transform : null;
@@ -97,6 +110,8 @@ namespace Gazeus.DesafioMatch3.Gameplay
 
             _boardView.TileClicked += OnTileClick;
             _hudView.Bind();
+            _gameplayUi?.BindGameEvents();
+            _gameplayAudio?.Bind();
             _wired = true;
             return true;
         }
@@ -113,6 +128,11 @@ namespace Gazeus.DesafioMatch3.Gameplay
             if (_hudView != null)
             {
                 _hudView.Unbind();
+            }
+
+            if (_gameplayAudio != null)
+            {
+                _gameplayAudio.Unbind();
             }
 
             if (_boardTweenRoot != null)
@@ -576,9 +596,11 @@ namespace Gazeus.DesafioMatch3.Gameplay
             Sequence sequence = DOTween.Sequence();
             sequence.SetLink(gameObject, LinkBehaviour.KillOnDestroy);
 
-            foreach (BoardSequence boardSequence in boardSequences)
+            for (int i = 0; i < boardSequences.Count; i++)
             {
+                BoardSequence boardSequence = boardSequences[i];
                 sequence.Append(_boardView.DestroyTiles(boardSequence.MatchedPosition));
+                sequence.AppendCallback(() => GameService.ApplyCascadeStep(boardSequence));
                 sequence.Append(_boardView.MoveTiles(boardSequence.MovedTiles));
                 sequence.Append(_boardView.CreateTile(boardSequence.AddedTiles));
             }
@@ -614,6 +636,7 @@ namespace Gazeus.DesafioMatch3.Gameplay
             if (!_boardView.HasSelection)
             {
                 _boardView.SelectCell(cell);
+                AudioService.PlaySfx(AudioKeys.GameplayGemSelect);
                 return;
             }
 
@@ -654,6 +677,8 @@ namespace Gazeus.DesafioMatch3.Gameplay
             {
                 _tutorialAdvancePending = true;
             }
+
+            AudioService.PlaySfx(AudioKeys.GameplayGemSlide);
 
             Tween swapTween = _boardView.SwapTiles(selectedCell, cell);
             swapTween.SetLink(gameObject, LinkBehaviour.KillOnDestroy);

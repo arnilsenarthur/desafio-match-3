@@ -1,5 +1,6 @@
 using System.Collections;
 using Gazeus.DesafioMatch3.App;
+using Gazeus.DesafioMatch3.Audio;
 using Gazeus.DesafioMatch3.Data;
 using Gazeus.DesafioMatch3.Gameplay;
 using Gazeus.DesafioMatch3.Localization;
@@ -98,6 +99,7 @@ namespace Gazeus.DesafioMatch3.UI.Controllers
             }
 
             _overlay.ShowIntro(LocKeys.TutorialIntroTitle, LocKeys.TutorialIntroBody);
+            AudioService.PlaySfx(AudioKeys.UiTutorialPage);
             return true;
         }
 

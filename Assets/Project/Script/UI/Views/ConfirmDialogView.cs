@@ -1,4 +1,5 @@
 using System;
+using Gazeus.DesafioMatch3.Audio;
 using Gazeus.DesafioMatch3.Localization;
 using TMPro;
 using UnityEngine;
@@ -28,6 +29,8 @@ namespace Gazeus.DesafioMatch3.UI.Views
         private string _messageKey;
         private string _confirmLabelKey;
         private bool _hasActiveContent;
+
+        protected override string GetOpenSoundKey() => AudioKeys.UiPopup;
 
         public event Action<ConfirmAction> Confirmed;
 

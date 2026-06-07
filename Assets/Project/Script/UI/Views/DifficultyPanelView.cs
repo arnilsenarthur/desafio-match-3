@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using DG.Tweening;
 using Gazeus.DesafioMatch3.App;
+using Gazeus.DesafioMatch3.Audio;
 using UnityEngine;
 
 namespace Gazeus.DesafioMatch3.UI.Views
@@ -10,6 +11,8 @@ namespace Gazeus.DesafioMatch3.UI.Views
     {
         [SerializeField]
         private RectTransform[] _enterElements;
+
+        protected override string GetOpenSoundKey() => AudioKeys.UiPopup;
 
         [SerializeField]
         private Vector2 _slideOffset = new(-120f, 0f);
@@ -81,6 +84,7 @@ namespace Gazeus.DesafioMatch3.UI.Views
                 group.alpha = 0f;
 
                 float delay = i * stagger;
+                sequence.InsertCallback(delay, PlayEnterGemSlideSound);
                 sequence.Insert(
                     delay,
                     DOTween.To(() => target.anchoredPosition, value => target.anchoredPosition = value, restPosition, duration)
@@ -92,6 +96,9 @@ namespace Gazeus.DesafioMatch3.UI.Views
 
             _enterTween = sequence.SetLink(gameObject, LinkBehaviour.KillOnDestroy);
         }
+
+        private static void PlayEnterGemSlideSound() =>
+            AudioService.PlaySfx(AudioKeys.GameplayGemSlide);
 
         private void StopEnterAnimation()
         {

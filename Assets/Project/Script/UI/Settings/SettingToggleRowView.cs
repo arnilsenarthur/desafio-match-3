@@ -1,4 +1,5 @@
 using Gazeus.DesafioMatch3.App;
+using Gazeus.DesafioMatch3.Audio;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -60,6 +61,8 @@ namespace Gazeus.DesafioMatch3.UI.Settings
             {
                 return;
             }
+
+            AudioService.PlaySfx(AudioKeys.UiCheck);
 
             if (_settingId == SettingId.PlayTutorialNextTime)
             {

@@ -1,5 +1,6 @@
 using System;
 using Gazeus.DesafioMatch3.App;
+using Gazeus.DesafioMatch3.Audio;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -65,6 +66,7 @@ namespace Gazeus.DesafioMatch3.UI.Settings
             }
 
             SelectValue(value);
+            AudioService.PlaySfx(AudioKeys.UiCheck);
             Refresh();
         }
     }

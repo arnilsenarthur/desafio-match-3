@@ -572,7 +572,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1596440418666770716, guid: 9abcad0fccf7f474280f5b31871b0da1, type: 3}
       propertyPath: m_Name
-      value: ButtonCancel
+      value: CancelButton
       objectReference: {fileID: 0}
     - target: {fileID: 6628088454044067242, guid: 9abcad0fccf7f474280f5b31871b0da1, type: 3}
       propertyPath: m_Color.b
@@ -690,7 +690,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1596440418666770716, guid: 9abcad0fccf7f474280f5b31871b0da1, type: 3}
       propertyPath: m_Name
-      value: ButtonConfirm
+      value: ConfirmButton
       objectReference: {fileID: 0}
     - target: {fileID: 8161211905322445918, guid: 9abcad0fccf7f474280f5b31871b0da1, type: 3}
       propertyPath: m_text

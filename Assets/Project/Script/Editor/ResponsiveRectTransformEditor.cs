@@ -30,7 +30,8 @@ namespace Gazeus.DesafioMatch3.Editor
             EditorGUILayout.PropertyField(_portraitTarget, new GUIContent("Portrait Target"));
 
             EditorGUILayout.HelpBox(
-                "Copies the target width/height, world position, world rotation, and world scale.",
+                "Follows Game view / Device Simulator size and orientation while not playing. " +
+                "Landscape / Portrait buttons force a manual preview until the view changes again.",
                 MessageType.None);
 
             serializedObject.ApplyModifiedProperties();
@@ -48,7 +49,7 @@ namespace Gazeus.DesafioMatch3.Editor
                 return;
             }
 
-            bool previewLandscape = responsive.EditorPreviewLandscape;
+            bool previewLandscape = responsive.UsesLandscapeLayout;
             DrawTargetBounds(responsive.LandscapeTarget, new Color(0.2f, 0.85f, 0.35f), previewLandscape);
             DrawTargetBounds(responsive.PortraitTarget, new Color(0.35f, 0.65f, 1f), !previewLandscape);
         }
@@ -73,10 +74,19 @@ namespace Gazeus.DesafioMatch3.Editor
 
             EditorGUILayout.EndHorizontal();
 
+            if (target is ResponsiveRectTransform responsive)
+            {
+                Vector2Int screenSize = new(UnityEngine.Device.Screen.width, UnityEngine.Device.Screen.height);
+                bool autoLandscape = screenSize.x >= screenSize.y;
+                EditorGUILayout.LabelField(
+                    $"Game View: {screenSize.x} x {screenSize.y} ({(autoLandscape ? "Landscape" : "Portrait")})",
+                    EditorStyles.miniLabel);
+            }
+
             EditorGUILayout.HelpBox(
                 isLandscape
-                    ? "Previewing landscape target layout."
-                    : "Previewing portrait target layout.",
+                    ? "Manual preview: landscape target."
+                    : "Manual preview: portrait target.",
                 MessageType.None);
         }
 
@@ -94,14 +104,19 @@ namespace Gazeus.DesafioMatch3.Editor
 
         private void SetPreviewOrientation(bool landscape)
         {
-            if (_editorPreviewLandscape.boolValue == landscape)
+            foreach (Object targetObject in targets)
             {
-                return;
+                if (targetObject is not ResponsiveRectTransform responsive)
+                {
+                    continue;
+                }
+
+                responsive.EditorSetPreviewLandscape(landscape);
+                EditorUtility.SetDirty(responsive);
             }
 
             _editorPreviewLandscape.boolValue = landscape;
             serializedObject.ApplyModifiedProperties();
-            ApplyToTargets();
             SceneView.RepaintAll();
         }
 
@@ -114,7 +129,7 @@ namespace Gazeus.DesafioMatch3.Editor
                     continue;
                 }
 
-                responsive.ApplyCurrentTarget();
+                responsive.ForceRefresh();
                 EditorUtility.SetDirty(responsive);
             }
         }

@@ -1,8 +1,8 @@
 using Gazeus.DesafioMatch3.App;
+using Gazeus.DesafioMatch3.Audio;
 using Gazeus.DesafioMatch3.Gameplay;
 using Gazeus.DesafioMatch3.Localization;
 using Gazeus.DesafioMatch3.UI.Views;
-using TMPro;
 using UnityEngine;
 
 namespace Gazeus.DesafioMatch3.UI.Controllers
@@ -14,7 +14,7 @@ namespace Gazeus.DesafioMatch3.UI.Controllers
         private GameController _gameController;
 
         [SerializeField]
-        private UiPanelView _pausePanel;
+        private PausePanelView _pausePanel;
 
         [SerializeField]
         private SettingsPanelView _settingsPanel;
@@ -26,17 +26,13 @@ namespace Gazeus.DesafioMatch3.UI.Controllers
         private UiPanelView _gameOverPanel;
 
         [SerializeField]
-        private TMP_Text _gameOverMessageText;
+        private GameOverView _gameOverView;
 
         [SerializeField]
         private GameplayTutorialController _gameplayTutorial;
 
         private bool _gameEventsBound;
-        private GameEndedEventArgs _lastGameEndedArgs;
         private bool _gameOverVisible;
-        private int _gameOverBestScore;
-        private bool _gameOverIsNewHighScore;
-        private string _gameOverReasonKey;
 
         private void Awake()
         {
@@ -50,8 +46,59 @@ namespace Gazeus.DesafioMatch3.UI.Controllers
                 _gameplayTutorial = GetComponent<GameplayTutorialController>();
             }
 
+            ResolveGameOverView();
+            ResolvePanelReferences();
+
             UiPanelView.HideAllOnLoad(_pausePanel, _confirmDialog, _gameOverPanel);
             _settingsPanel?.Hide(animated: false);
+            _gameOverView?.Hide();
+        }
+
+        private void ResolvePanelReferences()
+        {
+            if (_pausePanel == null)
+            {
+                _pausePanel = GetComponentInChildren<PausePanelView>(true);
+            }
+
+            if (_settingsPanel == null)
+            {
+                _settingsPanel = GetComponentInChildren<SettingsPanelView>(true);
+            }
+
+            if (_confirmDialog == null)
+            {
+                _confirmDialog = GetComponentInChildren<ConfirmDialogView>(true);
+            }
+
+            if (_gameOverPanel == null)
+            {
+                ResolveGameOverView();
+                if (_gameOverView != null)
+                {
+                    _gameOverPanel = _gameOverView.GetComponentInParent<UiPanelView>();
+                }
+            }
+        }
+
+        private void ShowPanel(UiPanelView panel)
+        {
+            if (panel == null)
+            {
+                ResolvePanelReferences();
+            }
+
+            panel?.Show();
+        }
+
+        private void HidePanel(UiPanelView panel, bool animated = true)
+        {
+            if (panel == null)
+            {
+                ResolvePanelReferences();
+            }
+
+            panel?.Hide(animated);
         }
 
         private void OnEnable()
@@ -80,14 +127,9 @@ namespace Gazeus.DesafioMatch3.UI.Controllers
 
         public void SkipTutorial() => _gameplayTutorial?.SkipTutorial();
 
-        private void BindGameEvents()
+        public void BindGameEvents()
         {
             UnbindGameEvents();
-
-            if (!GameService.IsActive)
-            {
-                return;
-            }
 
             GameService.GameStarted += OnGameStarted;
             GameService.GameEnded += OnGameEnded;
@@ -115,7 +157,8 @@ namespace Gazeus.DesafioMatch3.UI.Controllers
 
             if (_settingsPanel != null && _settingsPanel.IsVisible)
             {
-                _settingsPanel.Hide();
+                AudioService.PlaySfx(AudioKeys.UiClick);
+                HidePanel(_settingsPanel);
                 return;
             }
 
@@ -143,9 +186,9 @@ namespace Gazeus.DesafioMatch3.UI.Controllers
 
         public void Resume() => ApplyPause(false);
 
-        public void ShowSettings() => _settingsPanel?.Show();
+        public void ShowSettings() => ShowPanel(_settingsPanel);
 
-        public void CloseSettings() => _settingsPanel?.Hide();
+        public void CloseSettings() => HidePanel(_settingsPanel);
 
         public void GoToMainMenu() => SceneLoader.LoadMainMenu();
 
@@ -192,12 +235,12 @@ namespace Gazeus.DesafioMatch3.UI.Controllers
 
             if (paused)
             {
-                _pausePanel?.Show();
+                ShowPanel(_pausePanel);
             }
             else
             {
-                _pausePanel?.Hide();
-                _settingsPanel?.Hide();
+                HidePanel(_pausePanel);
+                HidePanel(_settingsPanel);
                 _confirmDialog?.Cancel();
             }
 
@@ -212,7 +255,8 @@ namespace Gazeus.DesafioMatch3.UI.Controllers
             }
 
             _gameOverVisible = false;
-            _gameOverPanel?.Hide();
+            _gameOverView?.Hide();
+            HidePanel(_gameOverPanel);
             _confirmDialog?.Cancel();
 
             if (_gameplayTutorial == null || !_gameplayTutorial.IsActive)
@@ -228,13 +272,14 @@ namespace Gazeus.DesafioMatch3.UI.Controllers
                 return;
             }
 
-            _pausePanel?.Hide();
-            _settingsPanel?.Hide();
+            HidePanel(_pausePanel);
+            HidePanel(_settingsPanel);
             _confirmDialog?.Cancel();
 
-            _lastGameEndedArgs = args;
             _gameOverVisible = true;
-            _gameOverReasonKey = args.Reason switch
+            ResolveGameOverView();
+
+            string reasonKey = args.Reason switch
             {
                 GameEndReason.TargetScoreReached => LocKeys.GameOverGoalReached,
                 GameEndReason.TimeUp => LocKeys.GameOverTimeUp,
@@ -242,40 +287,32 @@ namespace Gazeus.DesafioMatch3.UI.Controllers
             };
 
             string difficultyId = GameRunContext.SelectedDifficultyId;
-            _gameOverIsNewHighScore = HighScoreStorage.TrySetHighScore(difficultyId, args.FinalScore);
-            _gameOverBestScore = HighScoreStorage.Get(difficultyId);
-            ApplyGameOverText();
+            bool isNewHighScore = args.IsNewHighScore;
+            int bestScore = HighScoreStorage.Get(difficultyId);
 
-            _gameOverPanel?.Show();
+            _gameOverView?.Show(reasonKey, args.FinalScore, bestScore, isNewHighScore);
+            ShowPanel(_gameOverPanel);
             GameService.LockForGameOver();
         }
 
-        private void ApplyGameOverText()
+        private void ResolveGameOverView()
         {
-            if (_gameOverMessageText == null)
+            if (_gameOverView != null || _gameOverPanel == null)
             {
                 return;
             }
 
-            _gameOverMessageText.text = LocalizationService.Localize(
-                LocKeys.GameOverMessage,
-                LocalizationService.Localize(_gameOverReasonKey),
-                _lastGameEndedArgs.FinalScore,
-                _gameOverBestScore,
-                _gameOverIsNewHighScore ? LocalizationService.Localize(LocKeys.GameOverNewHighScore) : string.Empty);
+            _gameOverView = _gameOverPanel.GetComponentInChildren<GameOverView>(true);
         }
 
         private void OnLanguageChanged()
         {
-            if (!this)
+            if (!this || !_gameOverVisible)
             {
                 return;
             }
 
-            if (_gameOverVisible)
-            {
-                ApplyGameOverText();
-            }
+            _gameOverView?.RefreshLanguage();
         }
     }
 }

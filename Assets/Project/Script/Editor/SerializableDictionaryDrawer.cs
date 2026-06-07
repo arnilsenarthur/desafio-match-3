@@ -111,16 +111,37 @@ namespace Gazeus.DesafioMatch3.Editor
             Options options = null)
         {
             options ??= new Options();
-            ViewMetrics metrics = GetViewMetrics(dictionaryProperty, state, options);
+            state ??= new State();
+            state.SyncSearchFilter();
+
+            SerializedProperty keysProperty = dictionaryProperty?.FindPropertyRelative("_keys");
+            SerializedProperty valuesProperty = dictionaryProperty?.FindPropertyRelative("_values");
+
+            if (keysProperty == null || valuesProperty == null)
+            {
+                return EditorGUIUtility.singleLineHeight;
+            }
 
             int chromeLines = (options.ShowSearch ? 1 : 0) + 2;
             float spacing = EditorGUIUtility.standardVerticalSpacing;
             float lineHeight = EditorGUIUtility.singleLineHeight;
 
+            ViewMetrics metrics = GetViewMetrics(dictionaryProperty, state, options);
+            List<int> visibleIndices = BuildVisibleIndices(
+                keysProperty,
+                valuesProperty,
+                metrics.TotalCount,
+                state.SearchFilter?.Trim() ?? string.Empty);
+
+            int pageStart = state.Page * options.PageSize;
+            int pageEnd = Mathf.Min(pageStart + options.PageSize, visibleIndices.Count);
+            float scrollHeight = GetScrollHeight(valuesProperty, visibleIndices, pageStart, pageEnd);
+            scrollHeight = Mathf.Min(options.MaxScrollHeight, scrollHeight);
+
             return BoxPadding * 2f
                 + spacing * chromeLines
                 + lineHeight * chromeLines
-                + GetScrollHeight(metrics.PageRowCount, options.MaxScrollHeight);
+                + scrollHeight;
         }
 
         public static float GetPropertyHeight(
@@ -206,7 +227,8 @@ namespace Gazeus.DesafioMatch3.Editor
             int pageStart = state.Page * options.PageSize;
             int pageEnd = Mathf.Min(pageStart + options.PageSize, visibleIndices.Count);
             int pageRowCount = Mathf.Max(0, pageEnd - pageStart);
-            float scrollHeight = GetScrollHeight(pageRowCount, options.MaxScrollHeight);
+            float scrollHeight = GetScrollHeight(valuesProperty, visibleIndices, pageStart, pageEnd);
+            scrollHeight = Mathf.Min(options.MaxScrollHeight, scrollHeight);
             Rect scrollRect = new Rect(rect.x, rect.y, rect.width, scrollHeight);
 
             DrawRowsScrollView(
@@ -308,50 +330,68 @@ namespace Gazeus.DesafioMatch3.Editor
             float keyWidth,
             State state)
         {
-            float lineHeight = EditorGUIUtility.singleLineHeight;
             float spacing = EditorGUIUtility.standardVerticalSpacing;
-            int rowCount = Mathf.Max(0, pageEnd - pageStart);
-            float contentHeight = rowCount > 0
-                ? rowCount * lineHeight + Mathf.Max(0, rowCount - 1) * spacing + spacing
-                : lineHeight;
+            float contentHeight = GetScrollHeight(valuesProperty, visibleIndices, pageStart, pageEnd);
 
             Rect viewRect = new Rect(0f, 0f, scrollRect.width - 16f, contentHeight);
             state.Scroll = GUI.BeginScrollView(scrollRect, state.Scroll, viewRect);
 
-            float y = 0f;
+            float y = spacing;
+            float keyLineHeight = EditorGUIUtility.singleLineHeight;
             for (int visibleIndex = pageStart; visibleIndex < pageEnd; visibleIndex++)
             {
                 int arrayIndex = visibleIndices[visibleIndex];
                 SerializedProperty keyProperty = keysProperty.GetArrayElementAtIndex(arrayIndex);
                 SerializedProperty valueProperty = valuesProperty.GetArrayElementAtIndex(arrayIndex);
+                float valueHeight = GetValueHeight(valueProperty);
+                float rowHeight = Mathf.Max(keyLineHeight, valueHeight);
 
                 EditorGUI.PropertyField(
-                    new Rect(0f, y, keyWidth, lineHeight),
+                    new Rect(0f, y, keyWidth, keyLineHeight),
                     keyProperty,
                     GUIContent.none);
                 EditorGUI.PropertyField(
-                    new Rect(keyWidth, y, viewRect.width - keyWidth, lineHeight),
+                    new Rect(keyWidth, y, viewRect.width - keyWidth, valueHeight),
                     valueProperty,
-                    GUIContent.none);
+                    GUIContent.none,
+                    true);
 
-                y += lineHeight + spacing;
+                y += rowHeight + spacing;
             }
 
             GUI.EndScrollView();
         }
 
-        private static float GetScrollHeight(int rowCount, float maxScrollHeight)
+        private static float GetScrollHeight(
+            SerializedProperty valuesProperty,
+            List<int> visibleIndices,
+            int pageStart,
+            int pageEnd)
         {
-            float rowHeight = EditorGUIUtility.singleLineHeight + EditorGUIUtility.standardVerticalSpacing;
+            float spacing = EditorGUIUtility.standardVerticalSpacing;
 
-            if (rowCount <= 0)
+            if (pageEnd <= pageStart || valuesProperty == null)
             {
-                return rowHeight;
+                return EditorGUIUtility.singleLineHeight;
             }
 
-            float contentHeight = rowCount * rowHeight + EditorGUIUtility.standardVerticalSpacing;
-            return Mathf.Min(maxScrollHeight, contentHeight);
+            float contentHeight = spacing;
+            float keyLineHeight = EditorGUIUtility.singleLineHeight;
+            for (int visibleIndex = pageStart; visibleIndex < pageEnd; visibleIndex++)
+            {
+                int arrayIndex = visibleIndices[visibleIndex];
+                SerializedProperty valueProperty = valuesProperty.GetArrayElementAtIndex(arrayIndex);
+                float rowHeight = Mathf.Max(keyLineHeight, GetValueHeight(valueProperty));
+                contentHeight += rowHeight + spacing;
+            }
+
+            return contentHeight;
         }
+
+        private static float GetValueHeight(SerializedProperty valueProperty) =>
+            valueProperty == null
+                ? EditorGUIUtility.singleLineHeight
+                : EditorGUI.GetPropertyHeight(valueProperty, GUIContent.none, true);
 
         private static List<int> BuildVisibleIndices(
             SerializedProperty keysProperty,

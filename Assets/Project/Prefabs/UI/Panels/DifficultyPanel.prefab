@@ -634,7 +634,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1596440418666770716, guid: 9abcad0fccf7f474280f5b31871b0da1, type: 3}
       propertyPath: m_Name
-      value: Button
+      value: BackButton
       objectReference: {fileID: 0}
     - target: {fileID: 6628088454044067242, guid: 9abcad0fccf7f474280f5b31871b0da1, type: 3}
       propertyPath: m_Color.b

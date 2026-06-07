@@ -114,12 +114,18 @@ namespace Gazeus.DesafioMatch3.Gameplay
         public GameEndReason Reason { get; }
         public int FinalScore { get; }
         public float TimeRemaining { get; }
+        public bool IsNewHighScore { get; }
 
-        public GameEndedEventArgs(GameEndReason reason, int finalScore, float timeRemaining)
+        public GameEndedEventArgs(
+            GameEndReason reason,
+            int finalScore,
+            float timeRemaining,
+            bool isNewHighScore)
         {
             Reason = reason;
             FinalScore = finalScore;
             TimeRemaining = timeRemaining;
+            IsNewHighScore = isNewHighScore;
         }
     }
 }

@@ -98,6 +98,8 @@ namespace Gazeus.DesafioMatch3.Gameplay
         public static List<BoardSequence> ResolveValidSwap(Vector2Int from, Vector2Int to) =>
             _state?.ResolveValidSwap(from, to);
 
+        public static void ApplyCascadeStep(BoardSequence sequence) => _state?.ApplyCascadeStep(sequence);
+
         public static bool TryRegenerateBoardIfNoValidMoves() =>
             _state != null && _state.TryRegenerateBoardIfNoValidMoves();
 

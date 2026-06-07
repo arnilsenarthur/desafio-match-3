@@ -1,3 +1,4 @@
+using Gazeus.DesafioMatch3.Audio;
 using Gazeus.DesafioMatch3.UI.Settings;
 using UnityEngine;
 
@@ -6,6 +7,8 @@ namespace Gazeus.DesafioMatch3.UI.Views
     public class SettingsPanelView : UiPanelView
     {
         private SettingRowBase[] _rows;
+
+        protected override string GetOpenSoundKey() => AudioKeys.UiPopup;
 
         protected override void OnBeforeShow()
         {

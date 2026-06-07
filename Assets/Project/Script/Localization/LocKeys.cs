@@ -25,7 +25,8 @@ namespace Gazeus.DesafioMatch3.Localization
         public const string GameOverGoalReached = "game_over.goal_reached";
         public const string GameOverTimeUp = "game_over.time_up";
         public const string GameOverDefault = "game_over.default";
-        public const string GameOverMessage = "game_over.message";
+        public const string GameOverFinalScoreLabel = "game_over.final_score.label";
+        public const string GameOverBestScoreLabel = "game_over.best_score.label";
         public const string GameOverNewHighScore = "game_over.new_high_score";
 
         public const string TutorialIntroTitle = "tutorial.intro.title";

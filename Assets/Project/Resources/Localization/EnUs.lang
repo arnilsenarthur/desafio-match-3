@@ -53,8 +53,9 @@ confirm.main_menu.button=Main Menu
 game_over.goal_reached=Goal reached!
 game_over.time_up=Time's up!
 game_over.default=Game over
-game_over.new_high_score=\nNew high score!
-game_over.message={0}\nScore: {1}\nBest: {2}{3}
+game_over.final_score.label=Score
+game_over.best_score.label=Best
+game_over.new_high_score=New high score!
 
 hud.best_score.label=Best:
 hud.score_label=Score

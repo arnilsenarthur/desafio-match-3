@@ -69,10 +69,11 @@ MonoBehaviour:
   _highScoreValueLabel: {fileID: 8311455115319019426}
   _highScoreCycleSeconds: 3
   _enterElements:
+  - {fileID: 7100858588105241206}
   - {fileID: 5115328601172958765}
   - {fileID: 7906506097577137511}
   - {fileID: 8923576904551616635}
-  - {fileID: 0}
+  - {fileID: 839732267990692581}
 --- !u!1 &3898202978956091323
 GameObject:
   m_ObjectHideFlags: 0
@@ -388,8 +389,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: main_menu.title
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 850a4d766ae32974290f804ceca955cc, type: 2}
+  m_sharedMaterial: {fileID: 7955428084262676631, guid: 850a4d766ae32974290f804ceca955cc, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -413,13 +414,13 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 56
-  m_fontSizeBase: 56
+  m_fontSize: 72
+  m_fontSizeBase: 72
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 0
   m_fontSizeMax: 0
-  m_fontStyle: 0
+  m_fontStyle: 1
   m_HorizontalAlignment: 2
   m_VerticalAlignment: 512
   m_textAlignment: 65535
@@ -906,7 +907,7 @@ GameObject:
   - component: {fileID: 6648637472147556930}
   - component: {fileID: 4504435859369555491}
   m_Layer: 5
-  m_Name: Best Scores
+  m_Name: BestScores
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1056,7 +1057,7 @@ GameObject:
   - component: {fileID: 2441845173681104040}
   - component: {fileID: 5660412080280873557}
   m_Layer: 5
-  m_Name: Best Score Header
+  m_Name: BestScoresHeader
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1130,7 +1131,6 @@ GameObject:
   m_Component:
   - component: {fileID: 3691993030198732747}
   - component: {fileID: 8505973589947914264}
-  - component: {fileID: 1015754575794358672}
   - component: {fileID: 7415961190464631697}
   - component: {fileID: 2083179605839864870}
   m_Layer: 5
@@ -1170,36 +1170,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8688298848031115384}
   m_CullTransparentMesh: 1
---- !u!114 &1015754575794358672
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8688298848031115384}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
-  m_Material: {fileID: 0}
-  m_Color: {r: 0, g: 0, b: 0, a: 1}
-  m_RaycastTarget: 1
-  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
-  m_Maskable: 1
-  m_OnCullStateChanged:
-    m_PersistentCalls:
-      m_Calls: []
-  m_Sprite: {fileID: 0}
-  m_Type: 0
-  m_PreserveAspect: 0
-  m_FillCenter: 1
-  m_FillMethod: 4
-  m_FillAmount: 1
-  m_FillClockwise: 1
-  m_FillOrigin: 0
-  m_UseSpriteMesh: 0
-  m_PixelsPerUnitMultiplier: 1
 --- !u!114 &7415961190464631697
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1250,7 +1220,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 3530664255376827549, guid: 7272f92f481fa1d45ac46e6811b03902, type: 3}
       propertyPath: m_Name
-      value: ButtonQuit
+      value: QuitButton
       objectReference: {fileID: 0}
     - target: {fileID: 3953333103204501876, guid: 7272f92f481fa1d45ac46e6811b03902, type: 3}
       propertyPath: m_Pivot.x
@@ -1412,7 +1382,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 3530664255376827549, guid: 7272f92f481fa1d45ac46e6811b03902, type: 3}
       propertyPath: m_Name
-      value: ButtonSettings
+      value: SettingsButton
       objectReference: {fileID: 0}
     - target: {fileID: 3953333103204501876, guid: 7272f92f481fa1d45ac46e6811b03902, type: 3}
       propertyPath: m_Pivot.x
@@ -1522,6 +1492,10 @@ PrefabInstance:
       propertyPath: m_text
       value: main_menu.settings
       objectReference: {fileID: 0}
+    - target: {fileID: 6824318227435793205, guid: 7272f92f481fa1d45ac46e6811b03902, type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: -1224236817, guid: 7680facb9db90e04c9b6eea0a7da7bf6, type: 3}
     - target: {fileID: 6957297973235777839, guid: 7272f92f481fa1d45ac46e6811b03902, type: 3}
       propertyPath: m_AnchorMax.y
       value: 0
@@ -1578,7 +1552,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 3530664255376827549, guid: 7272f92f481fa1d45ac46e6811b03902, type: 3}
       propertyPath: m_Name
-      value: ButtonPlay
+      value: PlayButton
       objectReference: {fileID: 0}
     - target: {fileID: 3953333103204501876, guid: 7272f92f481fa1d45ac46e6811b03902, type: 3}
       propertyPath: m_Pivot.x
@@ -1684,6 +1658,14 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6312551933529569759, guid: 7272f92f481fa1d45ac46e6811b03902, type: 3}
+      propertyPath: m_text
+      value: main_menu.play
+      objectReference: {fileID: 0}
+    - target: {fileID: 6824318227435793205, guid: 7272f92f481fa1d45ac46e6811b03902, type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: -368946663, guid: 7680facb9db90e04c9b6eea0a7da7bf6, type: 3}
     - target: {fileID: 6957297973235777839, guid: 7272f92f481fa1d45ac46e6811b03902, type: 3}
       propertyPath: m_AnchorMax.y
       value: 0

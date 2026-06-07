@@ -1,4 +1,5 @@
 using Gazeus.DesafioMatch3.App;
+using Gazeus.DesafioMatch3.Audio;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -7,6 +8,8 @@ namespace Gazeus.DesafioMatch3.UI.Settings
 {
     public class SettingSliderRowView : SettingRowBase
     {
+        private const float SliderSoundMinInterval = 0.12f;
+
         [SerializeField]
         private SettingId _settingId;
 
@@ -75,6 +78,8 @@ namespace Gazeus.DesafioMatch3.UI.Settings
             {
                 return;
             }
+
+            AudioService.PlaySfxRateLimited(AudioKeys.UiCheck, SliderSoundMinInterval);
 
             switch (_settingId)
             {

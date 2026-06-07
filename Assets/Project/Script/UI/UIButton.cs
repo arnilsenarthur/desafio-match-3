@@ -1,4 +1,7 @@
+using Gazeus.DesafioMatch3.App;
+using Gazeus.DesafioMatch3.Audio;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace Gazeus.DesafioMatch3.UI
@@ -32,6 +35,16 @@ namespace Gazeus.DesafioMatch3.UI
         {
             ReleaseExtraVisuals(force: true);
             base.OnDisable();
+        }
+
+        public override void OnPointerClick(PointerEventData eventData)
+        {
+            if (IsInteractable())
+            {
+                AudioService.PlaySfx(AudioKeys.UiClick);
+            }
+
+            base.OnPointerClick(eventData);
         }
 
         protected override void DoStateTransition(SelectionState state, bool instant)

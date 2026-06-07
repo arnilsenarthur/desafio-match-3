@@ -1,6 +1,7 @@
 using System.Collections;
 using DG.Tweening;
 using Gazeus.DesafioMatch3.App;
+using Gazeus.DesafioMatch3.Audio;
 using Gazeus.DesafioMatch3.Data;
 using Gazeus.DesafioMatch3.Localization;
 using TMPro;
@@ -99,13 +100,18 @@ namespace Gazeus.DesafioMatch3.UI.Views
                 }
 
                 target.localScale = Vector3.zero;
+                float delay = i * stagger;
+                sequence.InsertCallback(delay, PlayEnterGemSlideSound);
                 sequence.Insert(
-                    i * stagger,
+                    delay,
                     target.DOScale(1f, duration).SetEase(Ease.OutBack));
             }
 
             _enterTween = sequence.SetLink(gameObject, LinkBehaviour.KillOnDestroy);
         }
+
+        private static void PlayEnterGemSlideSound() =>
+            AudioService.PlaySfx(AudioKeys.GameplayGemSlide);
 
         private RectTransform[] ResolveEnterElements()
         {
